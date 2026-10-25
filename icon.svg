@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="128" height="128" viewBox="0 0 128 128">
+  <rect width="128" height="128" fill="#0A0A14"/>
+  <polygon points="64,10 90,50 64,42 38,50" fill="#D4A830" stroke="#B8901A" stroke-width="1"/>
+  <polygon points="38,50 64,42 90,50 64,100" fill="#2A2A3A" stroke="#1A1A2A" stroke-width="1"/>
+  <text x="64" y="120" font-family="Arial" font-size="14" fill="#D4A830" text-anchor="middle" font-weight="bold">SHADOW</text>
+</svg>
