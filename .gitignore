@@ -14,7 +14,9 @@ mono_crash.*.json
 Thumbs.db
 
 # Build exports
-export/
+export/*
+!export/operation_shadow_release_arm64.apk
 *.apk
+!export/operation_shadow_release_arm64.apk
 *.pck
 

@@ -68,8 +68,8 @@ The basic training level has been rebuilt from a flat generic arena into **Camp 
 
 - **Export Target:** Android ARM64 Release APK (`export/operation_shadow_release_arm64.apk`)
 - **Target Ceiling:** `< 50.0 MB`
-- **Measured APK Size:** **26.54 MB** (27,833,981 bytes)
-- **Headroom Remaining:** **23.46 MB (46.9% headroom)**
+- **Measured APK Size:** **26.57 MB** (27,862,290 bytes)
+- **Headroom Remaining:** **23.43 MB (46.86% headroom)**
 - **Signing:** APK Signature Scheme v2 & v3 verified.
 
 ---
