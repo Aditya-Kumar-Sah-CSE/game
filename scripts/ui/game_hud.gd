@@ -54,6 +54,21 @@ func update_mission_name(name_text: String) -> void:
 	_mission_name_label.text = "OPERATION: %s" % name_text.to_upper()
 
 
+var _tutorial_banner: Label = null
+
+
+func show_tutorial_banner(text: String, duration: float = 3.5) -> void:
+	if not _tutorial_banner:
+		return
+	_tutorial_banner.text = text
+	_tutorial_banner.visible = true
+	_tutorial_banner.modulate.a = 1.0
+	var tween := create_tween()
+	tween.tween_interval(duration)
+	tween.tween_property(_tutorial_banner, "modulate:a", 0.0, 0.4)
+	tween.tween_callback(func(): _tutorial_banner.visible = false)
+
+
 func show_hit_indicator() -> void:
 	_damage_overlay.modulate = Color(1, 0.1, 0.1, 0.45)
 	var tween := create_tween()
@@ -326,6 +341,21 @@ func _build_hud() -> void:
 	_mission_name_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	_mission_name_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	mission_panel.add_child(_mission_name_label)
+	
+	# Tutorial instructional banner (center top)
+	_tutorial_banner = Label.new()
+	_tutorial_banner.set_anchors_preset(Control.PRESET_CENTER_TOP)
+	_tutorial_banner.offset_left = -300
+	_tutorial_banner.offset_right = 300
+	_tutorial_banner.offset_top = 62
+	_tutorial_banner.offset_bottom = 96
+	_tutorial_banner.add_theme_font_size_override("font_size", 13)
+	_tutorial_banner.add_theme_color_override("font_color", Color(1.0, 0.92, 0.45))
+	_tutorial_banner.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	_tutorial_banner.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	_tutorial_banner.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_tutorial_banner.visible = false
+	root.add_child(_tutorial_banner)
 	
 	# FPS counter (top left)
 	_fps_label = Label.new()

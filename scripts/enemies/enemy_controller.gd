@@ -50,6 +50,14 @@ var _animator: Node = null
 var _skeleton: Skeleton3D = null
 var _is_using_skeletal_mesh: bool = false
 
+# Moving target parameters
+var is_moving_target: bool = false
+var move_range: float = 4.5
+var move_speed_custom: float = 2.2
+var _move_direction: float = 1.0
+var _origin_x: float = 0.0
+var _initialized_origin: bool = false
+
 # Gravity
 var _gravity: float = ProjectSettings.get_setting("physics/3d/default_gravity", 9.8)
 
@@ -286,6 +294,15 @@ func _physics_process(delta: float) -> void:
 	if current_state == AIState.DEAD:
 		return
 	
+	if is_moving_target:
+		if not _initialized_origin:
+			_origin_x = position.x
+			_initialized_origin = true
+		position.x += _move_direction * move_speed_custom * delta
+		if abs(position.x - _origin_x) >= move_range:
+			_move_direction = -sign(position.x - _origin_x)
+		return
+	
 	# Gravity
 	if not is_on_floor():
 		velocity.y -= _gravity * delta
@@ -519,7 +536,11 @@ func take_damage(amount: float, from_position: Vector3 = Vector3.ZERO) -> void:
 		# Brief hurt state
 		current_state = AIState.HURT
 		_attack_cooldown = 0.3  # Stagger duration
-		if _animator and _is_using_skeletal_mesh:
+		if enemy_type == "training_dummy":
+			var tween := create_tween()
+			tween.tween_property(_mesh_root, "rotation:x", deg_to_rad(-12.0), 0.06)
+			tween.tween_property(_mesh_root, "rotation:x", 0.0, 0.12)
+		elif _animator and _is_using_skeletal_mesh:
 			_animator.play_one_shot("hit")
 		
 		# Find the player as target

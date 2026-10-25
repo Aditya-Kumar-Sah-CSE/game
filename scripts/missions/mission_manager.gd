@@ -92,6 +92,14 @@ func report_enemy_killed(enemy_type: String = "enemy") -> void:
 	_check_all_complete()
 
 
+func can_extract() -> bool:
+	for obj in _objectives:
+		if obj["type"] != "reach" or (obj["target"] != "waypoint_2" and obj["target"] != "extraction"):
+			if not obj["completed"]:
+				return false
+	return true
+
+
 func report_location_reached(location_id: String) -> void:
 	if not _is_active:
 		return
@@ -101,6 +109,9 @@ func report_location_reached(location_id: String) -> void:
 		if obj["completed"]:
 			continue
 		if obj["type"] == "reach" and obj["target"] == location_id:
+			# Prevent extraction before earlier objectives are satisfied
+			if (location_id == "waypoint_2" or location_id == "extraction") and not can_extract():
+				continue
 			obj["current_count"] = obj["required_count"]
 			obj["completed"] = true
 			objective_updated.emit(i, obj["current_count"], obj["required_count"], obj["description"])

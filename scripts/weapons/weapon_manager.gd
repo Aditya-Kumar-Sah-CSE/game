@@ -294,9 +294,13 @@ func _spawn_impact(pos: Vector3, normal: Vector3) -> void:
 	if not _player or not _player.is_inside_tree():
 		return
 	
+	var scene_root := _player.get_parent()
+	if not scene_root:
+		return
+	
 	var impact_root := Node3D.new()
+	scene_root.add_child(impact_root)
 	impact_root.global_position = pos
-	_player.get_tree().current_scene.add_child(impact_root)
 	
 	# Spark burst along normal
 	var spark := MeshInstance3D.new()
@@ -325,6 +329,7 @@ func _spawn_impact(pos: Vector3, normal: Vector3) -> void:
 	dmat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
 	dmat.cull_mode = BaseMaterial3D.CULL_DISABLED
 	decal.material_override = dmat
+	impact_root.add_child(decal)
 	
 	if normal.length_squared() > 0.01:
 		if absf(normal.dot(Vector3.UP)) < 0.99:
@@ -332,7 +337,6 @@ func _spawn_impact(pos: Vector3, normal: Vector3) -> void:
 		else:
 			decal.look_at(pos + normal, Vector3.RIGHT)
 	decal.position += normal * 0.01
-	impact_root.add_child(decal)
 	
 	var tween := impact_root.create_tween()
 	tween.set_parallel(true)
