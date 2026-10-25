@@ -1,0 +1,6 @@
+[gd_scene load_steps=2 format=3 uid="uid://theme_levels_test"]
+
+[ext_resource type="Script" path="res://scripts/tests/theme_levels_test.gd" id="1"]
+
+[node name="ThemeLevelsTest" type="Node3D"]
+script = ExtResource("1")

@@ -1,0 +1,978 @@
+{
+	"environments": {
+		"desert": 8,
+		"forest": 13,
+		"industrial": 8,
+		"military_base": 10,
+		"village": 12
+	},
+	"issue_count": 0,
+	"mission_details": {
+		"0": {
+			"difficulty": 0.1,
+			"enemy_count": 3,
+			"enemy_types": [
+				"training_dummy"
+			],
+			"environment": "military_base",
+			"issues": [],
+			"name": "Basic Training",
+			"next_level": 1,
+			"objective_count": 3,
+			"rewards": {
+				"currency": 25,
+				"xp": 50
+			},
+			"valid": true
+		},
+		"1": {
+			"difficulty": 0.15,
+			"enemy_count": 5,
+			"enemy_types": [
+				"soldier_basic"
+			],
+			"environment": "forest",
+			"issues": [],
+			"name": "First Contact",
+			"next_level": 2,
+			"objective_count": 1,
+			"rewards": {
+				"currency": 60,
+				"xp": 120
+			},
+			"valid": true
+		},
+		"10": {
+			"difficulty": 0.56,
+			"enemy_count": 16,
+			"enemy_types": [
+				"soldier_basic",
+				"soldier_patrol"
+			],
+			"environment": "village",
+			"issues": [],
+			"name": "Night Ops",
+			"next_level": 11,
+			"objective_count": 2,
+			"rewards": {
+				"currency": 200,
+				"xp": 400
+			},
+			"valid": true
+		},
+		"11": {
+			"difficulty": 0.5,
+			"enemy_count": 10,
+			"enemy_types": [
+				"soldier_basic",
+				"soldier_patrol"
+			],
+			"environment": "village",
+			"issues": [],
+			"name": "Breach and Clear",
+			"next_level": 12,
+			"objective_count": 4,
+			"rewards": {
+				"currency": 240,
+				"xp": 425
+			},
+			"valid": true
+		},
+		"12": {
+			"difficulty": 0.5125,
+			"enemy_count": 10,
+			"enemy_types": [
+				"soldier_basic",
+				"soldier_patrol"
+			],
+			"environment": "military_base",
+			"issues": [],
+			"name": "Urban Warfare",
+			"next_level": 13,
+			"objective_count": 1,
+			"rewards": {
+				"currency": 255,
+				"xp": 450
+			},
+			"valid": true
+		},
+		"13": {
+			"difficulty": 0.525,
+			"enemy_count": 10,
+			"enemy_types": [
+				"soldier_basic",
+				"soldier_patrol"
+			],
+			"environment": "desert",
+			"issues": [],
+			"name": "Desert Storm",
+			"next_level": 14,
+			"objective_count": 1,
+			"rewards": {
+				"currency": 270,
+				"xp": 475
+			},
+			"valid": true
+		},
+		"14": {
+			"difficulty": 0.5375,
+			"enemy_count": 10,
+			"enemy_types": [
+				"soldier_basic",
+				"soldier_patrol"
+			],
+			"environment": "industrial",
+			"issues": [],
+			"name": "Factory Raid",
+			"next_level": 15,
+			"objective_count": 2,
+			"rewards": {
+				"currency": 285,
+				"xp": 500
+			},
+			"valid": true
+		},
+		"15": {
+			"difficulty": 0.55,
+			"enemy_count": 10,
+			"enemy_types": [
+				"soldier_basic",
+				"soldier_patrol"
+			],
+			"environment": "forest",
+			"issues": [],
+			"name": "Deep Forest",
+			"next_level": 16,
+			"objective_count": 1,
+			"rewards": {
+				"currency": 300,
+				"xp": 525
+			},
+			"valid": true
+		},
+		"16": {
+			"difficulty": 0.5625,
+			"enemy_count": 13,
+			"enemy_types": [
+				"soldier_basic",
+				"soldier_patrol"
+			],
+			"environment": "village",
+			"issues": [],
+			"name": "Village Assault",
+			"next_level": 17,
+			"objective_count": 2,
+			"rewards": {
+				"currency": 315,
+				"xp": 550
+			},
+			"valid": true
+		},
+		"17": {
+			"difficulty": 0.575,
+			"enemy_count": 13,
+			"enemy_types": [
+				"soldier_basic",
+				"soldier_patrol"
+			],
+			"environment": "military_base",
+			"issues": [],
+			"name": "Base Infiltration",
+			"next_level": 18,
+			"objective_count": 2,
+			"rewards": {
+				"currency": 330,
+				"xp": 575
+			},
+			"valid": true
+		},
+		"18": {
+			"difficulty": 0.5875,
+			"enemy_count": 13,
+			"enemy_types": [
+				"soldier_basic",
+				"soldier_patrol"
+			],
+			"environment": "desert",
+			"issues": [],
+			"name": "Sand Dune Ambush",
+			"next_level": 19,
+			"objective_count": 2,
+			"rewards": {
+				"currency": 345,
+				"xp": 600
+			},
+			"valid": true
+		},
+		"19": {
+			"difficulty": 0.6,
+			"enemy_count": 13,
+			"enemy_types": [
+				"soldier_basic",
+				"soldier_patrol"
+			],
+			"environment": "industrial",
+			"issues": [],
+			"name": "Warehouse Siege",
+			"next_level": 20,
+			"objective_count": 1,
+			"rewards": {
+				"currency": 360,
+				"xp": 625
+			},
+			"valid": true
+		},
+		"2": {
+			"difficulty": 0.2,
+			"enemy_count": 6,
+			"enemy_types": [
+				"soldier_basic"
+			],
+			"environment": "forest",
+			"issues": [],
+			"name": "Clearing the Path",
+			"next_level": 3,
+			"objective_count": 1,
+			"rewards": {
+				"currency": 70,
+				"xp": 140
+			},
+			"valid": true
+		},
+		"20": {
+			"difficulty": 0.6125,
+			"enemy_count": 13,
+			"enemy_types": [
+				"soldier_basic",
+				"soldier_patrol"
+			],
+			"environment": "forest",
+			"issues": [],
+			"name": "Jungle Strike",
+			"next_level": 21,
+			"objective_count": 2,
+			"rewards": {
+				"currency": 375,
+				"xp": 650
+			},
+			"valid": true
+		},
+		"21": {
+			"difficulty": 0.625,
+			"enemy_count": 16,
+			"enemy_types": [
+				"soldier_basic",
+				"soldier_patrol",
+				"soldier_heavy"
+			],
+			"environment": "village",
+			"issues": [],
+			"name": "Civilian Rescue",
+			"next_level": 22,
+			"objective_count": 2,
+			"rewards": {
+				"currency": 390,
+				"xp": 675
+			},
+			"valid": true
+		},
+		"22": {
+			"difficulty": 0.6375,
+			"enemy_count": 16,
+			"enemy_types": [
+				"soldier_basic",
+				"soldier_patrol",
+				"soldier_heavy"
+			],
+			"environment": "military_base",
+			"issues": [],
+			"name": "Command Post",
+			"next_level": 23,
+			"objective_count": 1,
+			"rewards": {
+				"currency": 405,
+				"xp": 700
+			},
+			"valid": true
+		},
+		"23": {
+			"difficulty": 0.65,
+			"enemy_count": 16,
+			"enemy_types": [
+				"soldier_basic",
+				"soldier_patrol",
+				"soldier_heavy"
+			],
+			"environment": "desert",
+			"issues": [],
+			"name": "Oasis Defense",
+			"next_level": 24,
+			"objective_count": 2,
+			"rewards": {
+				"currency": 420,
+				"xp": 725
+			},
+			"valid": true
+		},
+		"24": {
+			"difficulty": 0.6625,
+			"enemy_count": 16,
+			"enemy_types": [
+				"soldier_basic",
+				"soldier_patrol",
+				"soldier_heavy"
+			],
+			"environment": "industrial",
+			"issues": [],
+			"name": "Refinery Sabotage",
+			"next_level": 25,
+			"objective_count": 1,
+			"rewards": {
+				"currency": 435,
+				"xp": 750
+			},
+			"valid": true
+		},
+		"25": {
+			"difficulty": 0.675,
+			"enemy_count": 16,
+			"enemy_types": [
+				"soldier_basic",
+				"soldier_patrol",
+				"soldier_heavy"
+			],
+			"environment": "forest",
+			"issues": [],
+			"name": "River Crossing",
+			"next_level": 26,
+			"objective_count": 2,
+			"rewards": {
+				"currency": 450,
+				"xp": 775
+			},
+			"valid": true
+		},
+		"26": {
+			"difficulty": 0.6875,
+			"enemy_count": 19,
+			"enemy_types": [
+				"soldier_basic",
+				"soldier_patrol",
+				"soldier_heavy"
+			],
+			"environment": "village",
+			"issues": [],
+			"name": "Market Square",
+			"next_level": 27,
+			"objective_count": 3,
+			"rewards": {
+				"currency": 465,
+				"xp": 800
+			},
+			"valid": true
+		},
+		"27": {
+			"difficulty": 0.7,
+			"enemy_count": 19,
+			"enemy_types": [
+				"soldier_basic",
+				"soldier_patrol",
+				"soldier_heavy"
+			],
+			"environment": "military_base",
+			"issues": [],
+			"name": "Armory Heist",
+			"next_level": 28,
+			"objective_count": 1,
+			"rewards": {
+				"currency": 480,
+				"xp": 825
+			},
+			"valid": true
+		},
+		"28": {
+			"difficulty": 0.7125,
+			"enemy_count": 19,
+			"enemy_types": [
+				"soldier_basic",
+				"soldier_patrol",
+				"soldier_heavy"
+			],
+			"environment": "desert",
+			"issues": [],
+			"name": "Canyon Pursuit",
+			"next_level": 29,
+			"objective_count": 1,
+			"rewards": {
+				"currency": 495,
+				"xp": 850
+			},
+			"valid": true
+		},
+		"29": {
+			"difficulty": 0.725,
+			"enemy_count": 19,
+			"enemy_types": [
+				"soldier_basic",
+				"soldier_patrol",
+				"soldier_heavy"
+			],
+			"environment": "industrial",
+			"issues": [],
+			"name": "Power Plant",
+			"next_level": 30,
+			"objective_count": 2,
+			"rewards": {
+				"currency": 510,
+				"xp": 875
+			},
+			"valid": true
+		},
+		"3": {
+			"difficulty": 0.25,
+			"enemy_count": 7,
+			"enemy_types": [
+				"soldier_basic"
+			],
+			"environment": "forest",
+			"issues": [],
+			"name": "Silent Approach",
+			"next_level": 4,
+			"objective_count": 1,
+			"rewards": {
+				"currency": 80,
+				"xp": 160
+			},
+			"valid": true
+		},
+		"30": {
+			"difficulty": 0.7375,
+			"enemy_count": 19,
+			"enemy_types": [
+				"soldier_basic",
+				"soldier_patrol",
+				"soldier_heavy"
+			],
+			"environment": "forest",
+			"issues": [],
+			"name": "Ridge Assault",
+			"next_level": 31,
+			"objective_count": 1,
+			"rewards": {
+				"currency": 525,
+				"xp": 900
+			},
+			"valid": true
+		},
+		"31": {
+			"difficulty": 0.75,
+			"enemy_count": 22,
+			"enemy_types": [
+				"soldier_basic",
+				"soldier_patrol",
+				"soldier_heavy"
+			],
+			"environment": "village",
+			"issues": [],
+			"name": "Harbor Strike",
+			"next_level": 32,
+			"objective_count": 2,
+			"rewards": {
+				"currency": 540,
+				"xp": 925
+			},
+			"valid": true
+		},
+		"32": {
+			"difficulty": 0.7625,
+			"enemy_count": 22,
+			"enemy_types": [
+				"soldier_basic",
+				"soldier_patrol",
+				"soldier_heavy"
+			],
+			"environment": "military_base",
+			"issues": [],
+			"name": "Tower Defense",
+			"next_level": 33,
+			"objective_count": 3,
+			"rewards": {
+				"currency": 555,
+				"xp": 950
+			},
+			"valid": true
+		},
+		"33": {
+			"difficulty": 0.775,
+			"enemy_count": 22,
+			"enemy_types": [
+				"soldier_basic",
+				"soldier_patrol",
+				"soldier_heavy"
+			],
+			"environment": "desert",
+			"issues": [],
+			"name": "Dust Bowl",
+			"next_level": 34,
+			"objective_count": 1,
+			"rewards": {
+				"currency": 570,
+				"xp": 975
+			},
+			"valid": true
+		},
+		"34": {
+			"difficulty": 0.7875,
+			"enemy_count": 22,
+			"enemy_types": [
+				"soldier_basic",
+				"soldier_patrol",
+				"soldier_heavy"
+			],
+			"environment": "industrial",
+			"issues": [],
+			"name": "Pipeline Sabotage",
+			"next_level": 35,
+			"objective_count": 1,
+			"rewards": {
+				"currency": 585,
+				"xp": 1000
+			},
+			"valid": true
+		},
+		"35": {
+			"difficulty": 0.8,
+			"enemy_count": 22,
+			"enemy_types": [
+				"soldier_basic",
+				"soldier_patrol",
+				"soldier_heavy"
+			],
+			"environment": "forest",
+			"issues": [],
+			"name": "Final Frontier",
+			"next_level": 36,
+			"objective_count": 2,
+			"rewards": {
+				"currency": 600,
+				"xp": 1025
+			},
+			"valid": true
+		},
+		"36": {
+			"difficulty": 0.8125,
+			"enemy_count": 25,
+			"enemy_types": [
+				"soldier_basic",
+				"soldier_patrol",
+				"soldier_heavy",
+				"soldier_elite"
+			],
+			"environment": "village",
+			"issues": [],
+			"name": "Last Stand",
+			"next_level": 37,
+			"objective_count": 2,
+			"rewards": {
+				"currency": 615,
+				"xp": 1050
+			},
+			"valid": true
+		},
+		"37": {
+			"difficulty": 0.825,
+			"enemy_count": 25,
+			"enemy_types": [
+				"soldier_basic",
+				"soldier_patrol",
+				"soldier_heavy",
+				"soldier_elite"
+			],
+			"environment": "military_base",
+			"issues": [],
+			"name": "Operation Endgame",
+			"next_level": 38,
+			"objective_count": 1,
+			"rewards": {
+				"currency": 630,
+				"xp": 1075
+			},
+			"valid": true
+		},
+		"38": {
+			"difficulty": 0.8375,
+			"enemy_count": 25,
+			"enemy_types": [
+				"soldier_basic",
+				"soldier_patrol",
+				"soldier_heavy",
+				"soldier_elite"
+			],
+			"environment": "desert",
+			"issues": [],
+			"name": "Shadow Protocol",
+			"next_level": 39,
+			"objective_count": 2,
+			"rewards": {
+				"currency": 645,
+				"xp": 1100
+			},
+			"valid": true
+		},
+		"39": {
+			"difficulty": 0.85,
+			"enemy_count": 25,
+			"enemy_types": [
+				"soldier_basic",
+				"soldier_patrol",
+				"soldier_heavy",
+				"soldier_elite"
+			],
+			"environment": "industrial",
+			"issues": [],
+			"name": "Iron Curtain",
+			"next_level": 40,
+			"objective_count": 2,
+			"rewards": {
+				"currency": 660,
+				"xp": 1125
+			},
+			"valid": true
+		},
+		"4": {
+			"difficulty": 0.3,
+			"enemy_count": 8,
+			"enemy_types": [
+				"soldier_basic"
+			],
+			"environment": "village",
+			"issues": [],
+			"name": "Supply Run",
+			"next_level": 5,
+			"objective_count": 1,
+			"rewards": {
+				"currency": 90,
+				"xp": 180
+			},
+			"valid": true
+		},
+		"40": {
+			"difficulty": 0.8625,
+			"enemy_count": 25,
+			"enemy_types": [
+				"soldier_basic",
+				"soldier_patrol",
+				"soldier_heavy",
+				"soldier_elite"
+			],
+			"environment": "forest",
+			"issues": [],
+			"name": "Ghost Recon",
+			"next_level": 41,
+			"objective_count": 1,
+			"rewards": {
+				"currency": 675,
+				"xp": 1150
+			},
+			"valid": true
+		},
+		"41": {
+			"difficulty": 0.875,
+			"enemy_count": 28,
+			"enemy_types": [
+				"soldier_basic",
+				"soldier_patrol",
+				"soldier_heavy",
+				"soldier_elite"
+			],
+			"environment": "village",
+			"issues": [],
+			"name": "Eagle Eye",
+			"next_level": 42,
+			"objective_count": 3,
+			"rewards": {
+				"currency": 690,
+				"xp": 1175
+			},
+			"valid": true
+		},
+		"42": {
+			"difficulty": 0.8875,
+			"enemy_count": 28,
+			"enemy_types": [
+				"soldier_basic",
+				"soldier_patrol",
+				"soldier_heavy",
+				"soldier_elite"
+			],
+			"environment": "military_base",
+			"issues": [],
+			"name": "Thunder Strike",
+			"next_level": 43,
+			"objective_count": 1,
+			"rewards": {
+				"currency": 705,
+				"xp": 1200
+			},
+			"valid": true
+		},
+		"43": {
+			"difficulty": 0.9,
+			"enemy_count": 28,
+			"enemy_types": [
+				"soldier_basic",
+				"soldier_patrol",
+				"soldier_heavy",
+				"soldier_elite"
+			],
+			"environment": "desert",
+			"issues": [],
+			"name": "Silent Storm",
+			"next_level": 44,
+			"objective_count": 1,
+			"rewards": {
+				"currency": 720,
+				"xp": 1225
+			},
+			"valid": true
+		},
+		"44": {
+			"difficulty": 0.9125,
+			"enemy_count": 28,
+			"enemy_types": [
+				"soldier_basic",
+				"soldier_patrol",
+				"soldier_heavy",
+				"soldier_elite"
+			],
+			"environment": "industrial",
+			"issues": [],
+			"name": "Dark Horizon",
+			"next_level": 45,
+			"objective_count": 2,
+			"rewards": {
+				"currency": 735,
+				"xp": 1250
+			},
+			"valid": true
+		},
+		"45": {
+			"difficulty": 0.925,
+			"enemy_count": 28,
+			"enemy_types": [
+				"soldier_basic",
+				"soldier_patrol",
+				"soldier_heavy",
+				"soldier_elite"
+			],
+			"environment": "forest",
+			"issues": [],
+			"name": "Omega Point",
+			"next_level": 46,
+			"objective_count": 1,
+			"rewards": {
+				"currency": 750,
+				"xp": 1275
+			},
+			"valid": true
+		},
+		"46": {
+			"difficulty": 0.9375,
+			"enemy_count": 31,
+			"enemy_types": [
+				"soldier_basic",
+				"soldier_patrol",
+				"soldier_heavy",
+				"soldier_elite"
+			],
+			"environment": "village",
+			"issues": [],
+			"name": "Phoenix Rising",
+			"next_level": 47,
+			"objective_count": 3,
+			"rewards": {
+				"currency": 765,
+				"xp": 1300
+			},
+			"valid": true
+		},
+		"47": {
+			"difficulty": 0.95,
+			"enemy_count": 31,
+			"enemy_types": [
+				"soldier_basic",
+				"soldier_patrol",
+				"soldier_heavy",
+				"soldier_elite"
+			],
+			"environment": "military_base",
+			"issues": [],
+			"name": "Viper Strike",
+			"next_level": 48,
+			"objective_count": 2,
+			"rewards": {
+				"currency": 780,
+				"xp": 1325
+			},
+			"valid": true
+		},
+		"48": {
+			"difficulty": 0.9625,
+			"enemy_count": 31,
+			"enemy_types": [
+				"soldier_basic",
+				"soldier_patrol",
+				"soldier_heavy",
+				"soldier_elite"
+			],
+			"environment": "desert",
+			"issues": [],
+			"name": "Wolf Pack",
+			"next_level": 49,
+			"objective_count": 1,
+			"rewards": {
+				"currency": 795,
+				"xp": 1350
+			},
+			"valid": true
+		},
+		"49": {
+			"difficulty": 0.975,
+			"enemy_count": 31,
+			"enemy_types": [
+				"soldier_basic",
+				"soldier_patrol",
+				"soldier_heavy",
+				"soldier_elite"
+			],
+			"environment": "industrial",
+			"issues": [],
+			"name": "Iron Fist",
+			"next_level": 50,
+			"objective_count": 1,
+			"rewards": {
+				"currency": 810,
+				"xp": 1375
+			},
+			"valid": true
+		},
+		"5": {
+			"difficulty": 0.35,
+			"enemy_count": 10,
+			"enemy_types": [
+				"soldier_basic"
+			],
+			"environment": "village",
+			"issues": [],
+			"name": "Holding Ground",
+			"next_level": 6,
+			"objective_count": 1,
+			"rewards": {
+				"currency": 100,
+				"xp": 200
+			},
+			"valid": true
+		},
+		"50": {
+			"difficulty": 0.9875,
+			"enemy_count": 31,
+			"enemy_types": [
+				"soldier_basic",
+				"soldier_patrol",
+				"soldier_heavy",
+				"soldier_elite"
+			],
+			"environment": "forest",
+			"issues": [],
+			"name": "Final Shadow",
+			"next_level": -1,
+			"objective_count": 2,
+			"rewards": {
+				"currency": 825,
+				"xp": 1400
+			},
+			"valid": true
+		},
+		"6": {
+			"difficulty": 0.4,
+			"enemy_count": 8,
+			"enemy_types": [
+				"soldier_basic",
+				"soldier_patrol"
+			],
+			"environment": "forest",
+			"issues": [],
+			"name": "Patrol Intercept",
+			"next_level": 7,
+			"objective_count": 2,
+			"rewards": {
+				"currency": 160,
+				"xp": 320
+			},
+			"valid": true
+		},
+		"7": {
+			"difficulty": 0.44,
+			"enemy_count": 10,
+			"enemy_types": [
+				"soldier_basic",
+				"soldier_patrol"
+			],
+			"environment": "village",
+			"issues": [],
+			"name": "Ammo Conservation",
+			"next_level": 8,
+			"objective_count": 2,
+			"rewards": {
+				"currency": 170,
+				"xp": 340
+			},
+			"valid": true
+		},
+		"8": {
+			"difficulty": 0.48,
+			"enemy_count": 12,
+			"enemy_types": [
+				"soldier_basic",
+				"soldier_patrol"
+			],
+			"environment": "military_base",
+			"issues": [],
+			"name": "Timed Strike",
+			"next_level": 9,
+			"objective_count": 2,
+			"rewards": {
+				"currency": 180,
+				"xp": 360
+			},
+			"valid": true
+		},
+		"9": {
+			"difficulty": 0.52,
+			"enemy_count": 14,
+			"enemy_types": [
+				"soldier_basic",
+				"soldier_patrol"
+			],
+			"environment": "forest",
+			"issues": [],
+			"name": "Flanking Maneuver",
+			"next_level": 10,
+			"objective_count": 2,
+			"rewards": {
+				"currency": 190,
+				"xp": 380
+			},
+			"valid": true
+		}
+	},
+	"objective_types_found": {
+		"defend": 6,
+		"eliminate": 51,
+		"reach": 16,
+		"survive": 13
+	},
+	"progression_chain_intact": true,
+	"total_missions_evaluated": 51,
+	"valid_count": 51
+}

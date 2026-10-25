@@ -7,6 +7,8 @@ signal weapon_reloaded(weapon_data: WeaponData)
 signal weapon_switched(weapon_data: WeaponData)
 signal ammo_changed(current_mag: int, reserve: int)
 
+const AudioSynthesizer = preload("res://scripts/utils/audio_synthesizer.gd")
+
 var _player: PlayerController
 var _weapons: Array[Dictionary] = []  # [{data: WeaponData, current_mag: int, reserve: int}]
 var _current_index: int = 0
@@ -303,6 +305,9 @@ func _create_default_weapons() -> void:
 	ar.max_spread = 5.0
 	ar.effective_range = 50.0
 	ar.damage_falloff_start = 30.0
+	ar.fire_sound = AudioSynthesizer.create_gunshot()
+	ar.reload_sound = AudioSynthesizer.create_reload_click()
+	ar.empty_click_sound = AudioSynthesizer.create_reload_click()
 	add_weapon(ar)
 	
 	# Pistol
@@ -323,6 +328,9 @@ func _create_default_weapons() -> void:
 	pistol.max_spread = 4.0
 	pistol.effective_range = 30.0
 	pistol.damage_falloff_start = 15.0
+	pistol.fire_sound = AudioSynthesizer.create_gunshot(22050, 0.18)
+	pistol.reload_sound = AudioSynthesizer.create_reload_click()
+	pistol.empty_click_sound = AudioSynthesizer.create_reload_click()
 	add_weapon(pistol)
 
 

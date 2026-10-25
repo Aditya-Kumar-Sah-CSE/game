@@ -8,6 +8,7 @@ signal health_changed(current: float, maximum: float)
 enum AIState { IDLE, PATROL, INVESTIGATE, ALERT, CHASE, SEEK_COVER, ATTACK, RELOAD, RETREAT, HURT, DEAD }
 
 @export_group("Stats")
+@export var enemy_type: String = "soldier_basic"
 @export var max_health: float = 100.0
 @export var move_speed: float = 3.0
 @export var run_speed: float = 5.0
@@ -85,8 +86,9 @@ func _create_enemy_mesh() -> void:
 	body_mesh.height = 1.2
 	body.mesh = body_mesh
 	body.position = Vector3(0, 1.0, 0)
+	var is_dummy := enemy_type == "training_dummy"
 	var body_mat := StandardMaterial3D.new()
-	body_mat.albedo_color = Color(0.5, 0.2, 0.15)  # Enemy red-brown
+	body_mat.albedo_color = Color(0.85, 0.45, 0.1) if is_dummy else Color(0.5, 0.2, 0.15)
 	body.material_override = body_mat
 	_mesh_root.add_child(body)
 	
@@ -98,33 +100,34 @@ func _create_enemy_mesh() -> void:
 	head.mesh = head_mesh
 	head.position = Vector3(0, 1.75, 0)
 	var head_mat := StandardMaterial3D.new()
-	head_mat.albedo_color = Color(0.65, 0.5, 0.4)
+	head_mat.albedo_color = Color(0.9, 0.75, 0.4) if is_dummy else Color(0.65, 0.5, 0.4)
 	head.material_override = head_mat
 	_mesh_root.add_child(head)
 	
-	# Helmet (enemy)
-	var helmet := MeshInstance3D.new()
-	var helmet_mesh := SphereMesh.new()
-	helmet_mesh.radius = 0.2
-	helmet_mesh.height = 0.28
-	helmet.mesh = helmet_mesh
-	helmet.position = Vector3(0, 1.82, 0)
-	var hmat := StandardMaterial3D.new()
-	hmat.albedo_color = Color(0.3, 0.15, 0.1)
-	helmet.material_override = hmat
-	_mesh_root.add_child(helmet)
-	
-	# Weapon
-	var wpn := MeshInstance3D.new()
-	var wpn_mesh := BoxMesh.new()
-	wpn_mesh.size = Vector3(0.05, 0.07, 0.5)
-	wpn.mesh = wpn_mesh
-	wpn.position = Vector3(0.35, 1.1, -0.3)
-	var wpn_mat := StandardMaterial3D.new()
-	wpn_mat.albedo_color = Color(0.12, 0.12, 0.12)
-	wpn_mat.metallic = 0.7
-	wpn.material_override = wpn_mat
-	_mesh_root.add_child(wpn)
+	if not is_dummy:
+		# Helmet (enemy)
+		var helmet := MeshInstance3D.new()
+		var helmet_mesh := SphereMesh.new()
+		helmet_mesh.radius = 0.2
+		helmet_mesh.height = 0.28
+		helmet.mesh = helmet_mesh
+		helmet.position = Vector3(0, 1.82, 0)
+		var hmat := StandardMaterial3D.new()
+		hmat.albedo_color = Color(0.3, 0.15, 0.1)
+		helmet.material_override = hmat
+		_mesh_root.add_child(helmet)
+		
+		# Weapon
+		var wpn := MeshInstance3D.new()
+		var wpn_mesh := BoxMesh.new()
+		wpn_mesh.size = Vector3(0.05, 0.07, 0.5)
+		wpn.mesh = wpn_mesh
+		wpn.position = Vector3(0.35, 1.1, -0.3)
+		var wpn_mat := StandardMaterial3D.new()
+		wpn_mat.albedo_color = Color(0.12, 0.12, 0.12)
+		wpn_mat.metallic = 0.7
+		wpn.material_override = wpn_mat
+		_mesh_root.add_child(wpn)
 	
 	# Legs
 	for side in [-1, 1]:

@@ -2,6 +2,8 @@ extends Node3D
 ## Base level scene — the gameplay arena for all missions.
 ## Spawns player, enemies, objectives, and manages mission flow.
 
+const AudioSynthesizer = preload("res://scripts/utils/audio_synthesizer.gd")
+
 var _player: PlayerController
 var _hud: GameHUD
 var _touch_controls: TouchControls
@@ -94,6 +96,7 @@ func _build_environment() -> void:
 	
 	# Environment
 	var env := WorldEnvironment.new()
+	env.name = "WorldEnvironment"
 	var environment := Environment.new()
 	environment.background_mode = Environment.BG_COLOR
 	environment.background_color = Color(0.4, 0.5, 0.7)
@@ -326,63 +329,171 @@ func _setup_mission() -> void:
 	_mission_manager.name = "MissionManager"
 	add_child(_mission_manager)
 	
-	_mission_manager.start_mission(_mission_data)
+	# Connect HUD before starting mission so initial objective labels are rendered
 	_hud.setup_mission(_mission_manager)
+	_mission_manager.start_mission(_mission_data)
+	
+	_spawn_waypoints()
+
+
+func _spawn_waypoints() -> void:
+	var objectives: Array = _mission_data.get("objectives", [])
+	var waypoint_index := 0
+	
+	for obj in objectives:
+		var obj_type: String = obj.get("type", "")
+		var target_id: String = str(obj.get("target", ""))
+		
+		if obj_type == "reach" or obj_type == "defend":
+			var pos := Vector3.ZERO
+			match target_id:
+				"waypoint_1":
+					pos = Vector3(0, 0, -22)
+				"waypoint_2":
+					pos = Vector3(25, 0, -25)
+				"extraction":
+					pos = Vector3(28, 0, -28)
+				"base":
+					pos = Vector3(0, 0, 8)
+				_:
+					pos = Vector3(randf_range(-25, 25), 0, randf_range(-25, -15))
+			
+			_create_waypoint_beacon(target_id, pos, obj.get("description", "Objective Point"), obj_type == "extraction")
+			waypoint_index += 1
+
+
+func _create_waypoint_beacon(target_id: String, pos: Vector3, label_text: String, is_extraction: bool = false) -> void:
+	var area := Area3D.new()
+	area.name = "Waypoint_" + target_id
+	area.position = pos
+	area.collision_layer = 32  # Trigger layer
+	area.collision_mask = 2   # Player layer
+	
+	# Cylinder collision trigger
+	var col := CollisionShape3D.new()
+	var col_shape := CylinderShape3D.new()
+	col_shape.radius = 2.5
+	col_shape.height = 2.0
+	col.shape = col_shape
+	col.position.y = 1.0
+	area.add_child(col)
+	
+	# Glowing floor ring pad
+	var ring := MeshInstance3D.new()
+	var ring_mesh := CylinderMesh.new()
+	ring_mesh.top_radius = 2.4
+	ring_mesh.bottom_radius = 2.5
+	ring_mesh.height = 0.05
+	ring.mesh = ring_mesh
+	ring.position.y = 0.02
+	
+	var ring_mat := StandardMaterial3D.new()
+	var glow_color := Color(0.2, 0.9, 0.3) if is_extraction else Color(0.2, 0.7, 1.0)
+	ring_mat.albedo_color = glow_color
+	ring_mat.emission_enabled = true
+	ring_mat.emission = glow_color
+	ring_mat.emission_energy_multiplier = 3.0
+	ring.material_override = ring_mat
+	area.add_child(ring)
+	
+	# Vertical beacon pillar
+	var beam := MeshInstance3D.new()
+	var beam_mesh := CylinderMesh.new()
+	beam_mesh.top_radius = 0.06
+	beam_mesh.bottom_radius = 0.06
+	beam_mesh.height = 6.0
+	beam.mesh = beam_mesh
+	beam.position.y = 3.0
+	beam.material_override = ring_mat
+	area.add_child(beam)
+	
+	# Floating billboard label
+	var lbl := Label3D.new()
+	lbl.text = "🎯 " + label_text
+	lbl.position = Vector3(0, 3.2, 0)
+	lbl.billboard = BaseMaterial3D.BILLBOARD_ENABLED
+	lbl.font_size = 22
+	lbl.modulate = glow_color
+	area.add_child(lbl)
+	
+	area.body_entered.connect(func(body: Node3D):
+		if body.is_in_group("player"):
+			_mission_manager.report_location_reached(target_id)
+			AudioManager.play_sfx(AudioSynthesizer.create_chime())
+			area.queue_free()
+	)
+	
+	add_child(area)
 
 
 func _spawn_enemies() -> void:
 	var enemy_count: int = _mission_data.get("enemy_count", 3)
 	var difficulty: float = _mission_data.get("difficulty", 0.2)
+	var enemy_types: Array = _mission_data.get("enemy_types", ["soldier_basic"])
 	var rng := RandomNumberGenerator.new()
 	rng.seed = GameManager.current_mission_id * 67890
 	
-	# Max active enemies for mobile performance
 	var max_active := 8 if GameManager.is_mobile else 12
 	enemy_count = mini(enemy_count, max_active)
+	
+	var is_tutorial := enemy_types.has("training_dummy")
 	
 	for i in enemy_count:
 		var enemy := EnemyController.new()
 		enemy.name = "Enemy_%d" % i
 		
-		# Random position away from player
-		var pos := Vector3.ZERO
-		for attempt in 10:
-			pos = Vector3(
-				rng.randf_range(-35, 35),
-				0.1,
-				rng.randf_range(-35, 35)
-			)
-			if pos.length() > 10:  # At least 10m from player spawn
-				break
-		
-		enemy.position = pos
-		
-		# Scale stats by difficulty
-		enemy.max_health = 80.0 + difficulty * 70.0
-		enemy.damage = 8.0 + difficulty * 12.0
-		enemy.attack_rate = 0.5 + difficulty * 0.8
-		enemy.detection_range = 15.0 + difficulty * 15.0
-		enemy.move_speed = 2.5 + difficulty * 2.0
-		enemy.run_speed = 4.0 + difficulty * 3.0
-		
-		# Patrol points near spawn position
-		enemy.patrol_points = [
-			pos + Vector3(rng.randf_range(-5, 5), 0, rng.randf_range(-5, 5)),
-			pos + Vector3(rng.randf_range(-5, 5), 0, rng.randf_range(-5, 5)),
-			pos
-		]
+		if is_tutorial:
+			enemy.enemy_type = "training_dummy"
+			# Spread dummies across shooting range
+			var dummy_x := -7.0 + float(i) * 7.0
+			enemy.position = Vector3(dummy_x, 0.1, -18.0)
+			enemy.max_health = 40.0
+			enemy.move_speed = 0.0
+			enemy.run_speed = 0.0
+			enemy.damage = 0.0
+			enemy.attack_rate = 0.0
+		else:
+			var chosen_type: String = enemy_types[i % enemy_types.size()]
+			enemy.enemy_type = chosen_type
+			
+			var pos := Vector3.ZERO
+			for attempt in 10:
+				pos = Vector3(
+					rng.randf_range(-35, 35),
+					0.1,
+					rng.randf_range(-35, 35)
+				)
+				if pos.length() > 10:
+					break
+			enemy.position = pos
+			
+			# Stats adjusted by type and difficulty
+			var hp_mult := 1.5 if chosen_type == "soldier_heavy" else (1.2 if chosen_type == "soldier_elite" else 1.0)
+			enemy.max_health = (80.0 + difficulty * 70.0) * hp_mult
+			enemy.damage = 8.0 + difficulty * 12.0
+			enemy.attack_rate = 0.5 + difficulty * 0.8
+			enemy.detection_range = 15.0 + difficulty * 15.0
+			enemy.move_speed = (3.5 if chosen_type == "soldier_elite" else 2.5) + difficulty * 2.0
+			enemy.run_speed = (6.0 if chosen_type == "soldier_elite" else 4.0) + difficulty * 3.0
+			
+			enemy.patrol_points = [
+				pos + Vector3(rng.randf_range(-5, 5), 0, rng.randf_range(-5, 5)),
+				pos + Vector3(rng.randf_range(-5, 5), 0, rng.randf_range(-5, 5)),
+				pos
+			]
 		
 		enemy.enemy_died.connect(_on_enemy_died)
-		
 		add_child(enemy)
 		_enemies.append(enemy)
 
 
 func _on_enemy_died(enemy: EnemyController) -> void:
 	_enemies.erase(enemy)
-	_mission_manager.report_enemy_killed("enemy")
+	_mission_manager.report_enemy_killed(enemy.enemy_type)
+	if enemy.enemy_type != "enemy":
+		_mission_manager.report_enemy_killed("enemy")
 
 
 func _on_player_died() -> void:
-	# Mission failure is handled by PlayerController → GameManager
 	pass
+

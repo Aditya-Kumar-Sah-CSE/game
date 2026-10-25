@@ -45,6 +45,14 @@ var weapon_holder: Node3D
 var mesh_root: Node3D
 var anim_player: AnimationPlayer
 
+# Limb pivots for procedural animation
+var _left_leg: Node3D
+var _right_leg: Node3D
+var _left_arm: Node3D
+var _right_arm: Node3D
+var _walk_cycle: float = 0.0
+var _recoil_offset: float = 0.0
+
 # State
 var current_health: float
 var current_armor: float
@@ -177,34 +185,61 @@ func _create_procedural_character() -> void:
 	helmet_mesh.material_override = helmet_mat
 	mesh_root.add_child(helmet_mesh)
 	
-	# Legs (two cylinders)
-	for side in [-1, 1]:
-		var leg_mesh := MeshInstance3D.new()
-		var leg := CylinderMesh.new()
-		leg.top_radius = 0.1
-		leg.bottom_radius = 0.12
-		leg.height = 0.8
-		leg_mesh.mesh = leg
-		leg_mesh.position = Vector3(side * 0.15, 0.4, 0)
-		var leg_mat := StandardMaterial3D.new()
-		leg_mat.albedo_color = Color(0.18, 0.2, 0.15)
-		leg_mesh.material_override = leg_mat
-		mesh_root.add_child(leg_mesh)
-	
-	# Arms (two cylinders)
-	for side in [-1, 1]:
-		var arm_mesh := MeshInstance3D.new()
-		var arm := CylinderMesh.new()
-		arm.top_radius = 0.07
-		arm.bottom_radius = 0.08
-		arm.height = 0.6
-		arm_mesh.mesh = arm
-		arm_mesh.position = Vector3(side * 0.4, 1.1, 0)
-		arm_mesh.rotation_degrees = Vector3(0, 0, side * 10)
-		var arm_mat := StandardMaterial3D.new()
-		arm_mat.albedo_color = Color(0.2, 0.25, 0.18)
-		arm_mesh.material_override = arm_mat
-		mesh_root.add_child(arm_mesh)
+	# Left Leg (hinged at hip)
+	_left_leg = Node3D.new()
+	_left_leg.name = "LeftLeg"
+	_left_leg.position = Vector3(-0.16, 0.8, 0)
+	mesh_root.add_child(_left_leg)
+	var l_leg_mesh := MeshInstance3D.new()
+	var leg_geom := CylinderMesh.new()
+	leg_geom.top_radius = 0.1
+	leg_geom.bottom_radius = 0.12
+	leg_geom.height = 0.8
+	l_leg_mesh.mesh = leg_geom
+	l_leg_mesh.position = Vector3(0, -0.4, 0)
+	var leg_mat := StandardMaterial3D.new()
+	leg_mat.albedo_color = Color(0.18, 0.2, 0.15)
+	l_leg_mesh.material_override = leg_mat
+	_left_leg.add_child(l_leg_mesh)
+
+	# Right Leg (hinged at hip)
+	_right_leg = Node3D.new()
+	_right_leg.name = "RightLeg"
+	_right_leg.position = Vector3(0.16, 0.8, 0)
+	mesh_root.add_child(_right_leg)
+	var r_leg_mesh := MeshInstance3D.new()
+	r_leg_mesh.mesh = leg_geom
+	r_leg_mesh.position = Vector3(0, -0.4, 0)
+	r_leg_mesh.material_override = leg_mat
+	_right_leg.add_child(r_leg_mesh)
+
+	# Left Arm (hinged at shoulder)
+	_left_arm = Node3D.new()
+	_left_arm.name = "LeftArm"
+	_left_arm.position = Vector3(-0.35, 1.35, 0)
+	mesh_root.add_child(_left_arm)
+	var l_arm_mesh := MeshInstance3D.new()
+	var arm_geom := CylinderMesh.new()
+	arm_geom.top_radius = 0.07
+	arm_geom.bottom_radius = 0.08
+	arm_geom.height = 0.6
+	l_arm_mesh.mesh = arm_geom
+	l_arm_mesh.position = Vector3(0, -0.3, 0)
+	var arm_mat := StandardMaterial3D.new()
+	arm_mat.albedo_color = Color(0.2, 0.25, 0.18)
+	l_arm_mesh.material_override = arm_mat
+	_left_arm.add_child(l_arm_mesh)
+
+	# Right Arm (hinged at shoulder)
+	_right_arm = Node3D.new()
+	_right_arm.name = "RightArm"
+	_right_arm.position = Vector3(0.35, 1.35, 0)
+	mesh_root.add_child(_right_arm)
+	var r_arm_mesh := MeshInstance3D.new()
+	r_arm_mesh.mesh = arm_geom
+	r_arm_mesh.position = Vector3(0, -0.3, 0)
+	r_arm_mesh.material_override = arm_mat
+	_right_arm.add_child(r_arm_mesh)
 
 
 func _physics_process(delta: float) -> void:
@@ -214,6 +249,7 @@ func _physics_process(delta: float) -> void:
 	_handle_gravity(delta)
 	_handle_movement(delta)
 	_handle_actions()
+	_update_procedural_animation(delta)
 	
 	move_and_slide()
 
@@ -317,6 +353,7 @@ func _handle_actions() -> void:
 	if Input.is_action_pressed("fire") or mobile_fire_pressed:
 		if _weapon_manager:
 			_weapon_manager.try_fire()
+			_recoil_offset = 0.08
 	
 	# Reload
 	if Input.is_action_just_pressed("reload"):
@@ -342,6 +379,47 @@ func _update_aim_state() -> void:
 		var target_dist := camera_aim_distance if is_aiming else camera_distance
 		var tween := create_tween()
 		tween.tween_property(spring_arm, "spring_length", target_dist, 0.2)
+
+
+func _update_procedural_animation(delta: float) -> void:
+	if not _left_leg or not _right_leg or not _left_arm or not _right_arm or not mesh_root:
+		return
+	
+	var h_velocity := Vector2(velocity.x, velocity.z).length()
+	
+	if h_velocity > 0.1 and is_on_floor():
+		var stride_speed := 12.0 if is_sprinting else 8.0
+		_walk_cycle += delta * stride_speed
+		var leg_swing := sin(_walk_cycle) * (0.6 if is_sprinting else 0.4)
+		_left_leg.rotation.x = leg_swing
+		_right_leg.rotation.x = -leg_swing
+		
+		if not is_aiming:
+			_left_arm.rotation.x = -leg_swing * 0.7
+			_right_arm.rotation.x = leg_swing * 0.7
+		
+		# Torso vertical bobbing
+		mesh_root.position.y = absf(sin(_walk_cycle * 2.0)) * 0.04
+	else:
+		_left_leg.rotation.x = lerpf(_left_leg.rotation.x, 0.0, 10.0 * delta)
+		_right_leg.rotation.x = lerpf(_right_leg.rotation.x, 0.0, 10.0 * delta)
+		
+		if not is_aiming:
+			_left_arm.rotation.x = lerpf(_left_arm.rotation.x, 0.0, 10.0 * delta)
+			_right_arm.rotation.x = lerpf(_right_arm.rotation.x, 0.0, 10.0 * delta)
+		
+		# Breathing idle bobbing
+		mesh_root.position.y = sin(Time.get_ticks_msec() * 0.003) * 0.015
+	
+	if is_aiming:
+		# Weapon raised pose
+		_left_arm.rotation.x = lerpf(_left_arm.rotation.x, deg_to_rad(-70.0), 12.0 * delta)
+		_right_arm.rotation.x = lerpf(_right_arm.rotation.x, deg_to_rad(-80.0), 12.0 * delta)
+	
+	# Recoil recovery on weapon holder
+	if weapon_holder:
+		_recoil_offset = move_toward(_recoil_offset, 0.0, 0.5 * delta)
+		weapon_holder.position.z = -0.5 + _recoil_offset
 
 
 func take_damage(amount: float, from_position: Vector3 = Vector3.ZERO) -> void:
