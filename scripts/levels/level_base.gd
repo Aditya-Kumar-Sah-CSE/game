@@ -52,20 +52,28 @@ func _build_environment() -> void:
 	ground_mesh.position = Vector3(0, -0.05, 0)
 	
 	var ground_mat := StandardMaterial3D.new()
-	# Color based on environment theme
-	match _mission_data.get("environment", "forest"):
+	var env_type: String = _mission_data.get("environment", "forest")
+	match env_type:
 		"forest":
-			ground_mat.albedo_color = Color(0.2, 0.35, 0.15)
+			ground_mat.albedo_color = Color(0.18, 0.28, 0.14)
+			ground_mat.roughness = 0.85
 		"desert":
-			ground_mat.albedo_color = Color(0.7, 0.55, 0.35)
+			ground_mat.albedo_color = Color(0.72, 0.58, 0.38)
+			ground_mat.roughness = 0.9
 		"military_base":
-			ground_mat.albedo_color = Color(0.35, 0.35, 0.3)
+			ground_mat.albedo_color = Color(0.28, 0.30, 0.29)
+			ground_mat.roughness = 0.7
+			ground_mat.metallic = 0.1
 		"village":
-			ground_mat.albedo_color = Color(0.4, 0.35, 0.25)
+			ground_mat.albedo_color = Color(0.38, 0.32, 0.24)
+			ground_mat.roughness = 0.85
 		"industrial":
-			ground_mat.albedo_color = Color(0.3, 0.3, 0.3)
+			ground_mat.albedo_color = Color(0.24, 0.24, 0.26)
+			ground_mat.roughness = 0.75
+			ground_mat.metallic = 0.15
 		_:
-			ground_mat.albedo_color = Color(0.3, 0.4, 0.2)
+			ground_mat.albedo_color = Color(0.25, 0.32, 0.22)
+			ground_mat.roughness = 0.8
 	
 	ground_mesh.material_override = ground_mat
 	ground.add_child(ground_mesh)
@@ -82,35 +90,54 @@ func _build_environment() -> void:
 	nav_region.navigation_mesh = nav_mesh
 	add_child(nav_region)
 	
-	# Move environment into nav region for baking
-	# ... we'll add obstacles below
-	
-	# Lighting
+	# Directional Sunlight with soft shadows
 	var sun := DirectionalLight3D.new()
 	sun.name = "Sun"
-	sun.rotation_degrees = Vector3(-45, -30, 0)
-	sun.light_energy = 1.2
+	sun.rotation_degrees = Vector3(-48, -35, 0)
+	sun.light_energy = 1.35
 	sun.shadow_enabled = true
-	sun.light_color = Color(1.0, 0.95, 0.85)
+	sun.shadow_bias = 0.04
+	sun.directional_shadow_max_distance = 65.0
+	sun.light_color = Color(1.0, 0.96, 0.88)
 	add_child(sun)
 	
-	# Environment
+	# WorldEnvironment with physical sky and ACES tonemapping
 	var env := WorldEnvironment.new()
 	env.name = "WorldEnvironment"
 	var environment := Environment.new()
-	environment.background_mode = Environment.BG_COLOR
-	environment.background_color = Color(0.4, 0.5, 0.7)
-	environment.ambient_light_source = Environment.AMBIENT_SOURCE_COLOR
-	environment.ambient_light_color = Color(0.3, 0.35, 0.4)
-	environment.ambient_light_energy = 0.5
+	
+	var sky := Sky.new()
+	var sky_mat := PhysicalSkyMaterial.new()
+	sky_mat.rayleigh_coefficient = 2.2
+	sky_mat.mie_coefficient = 0.006
+	sky.sky_material = sky_mat
+	environment.background_mode = Environment.BG_SKY
+	environment.sky = sky
+	
+	environment.ambient_light_source = Environment.AMBIENT_SOURCE_SKY
+	environment.ambient_light_energy = 0.45
 	environment.tonemap_mode = Environment.TONE_MAPPER_ACES
+	environment.tonemap_exposure = 1.05
+	
 	environment.fog_enabled = true
-	environment.fog_light_color = Color(0.5, 0.55, 0.6)
-	environment.fog_density = 0.005
+	environment.fog_mode = Environment.FOG_MODE_EXPONENTIAL
+	environment.fog_density = 0.0055
+	match env_type:
+		"desert":
+			environment.fog_light_color = Color(0.78, 0.70, 0.55)
+		"military_base":
+			environment.fog_light_color = Color(0.58, 0.62, 0.68)
+		"forest":
+			environment.fog_light_color = Color(0.52, 0.62, 0.52)
+		"industrial":
+			environment.fog_light_color = Color(0.48, 0.50, 0.54)
+		_:
+			environment.fog_light_color = Color(0.55, 0.60, 0.65)
+	
 	env.environment = environment
 	add_child(env)
 	
-	# Spawn cover objects (walls, barriers, crates)
+	# Spawn 3D modular cover objects and foliage
 	_spawn_cover_objects(nav_region)
 	
 	# Bake navigation
@@ -119,139 +146,200 @@ func _build_environment() -> void:
 
 func _spawn_cover_objects(nav_parent: Node3D) -> void:
 	var rng := RandomNumberGenerator.new()
-	rng.seed = GameManager.current_mission_id * 12345  # Deterministic per level
+	rng.seed = GameManager.current_mission_id * 12345
 	
 	var env_type: String = _mission_data.get("environment", "forest")
-	var num_objects := 15 + GameManager.current_mission_id * 2
-	num_objects = mini(num_objects, 40)
+	var num_objects := 16 + mini(GameManager.current_mission_id * 2, 24)
 	
 	for i in num_objects:
-		var obj := StaticBody3D.new()
-		obj.collision_layer = 1  # Environment
-		
 		var pos := Vector3(
 			rng.randf_range(-40, 40),
 			0,
 			rng.randf_range(-40, 40)
 		)
-		
-		# Don't spawn too close to player spawn
-		if pos.length() < 5:
+		# Ensure clean tactical clearing around player spawn (0, 0, 0)
+		if pos.length() < 9.0:
 			continue
 		
+		var obj := StaticBody3D.new()
+		obj.collision_layer = 1
 		obj.position = pos
-		
-		var mesh_inst := MeshInstance3D.new()
-		var col := CollisionShape3D.new()
-		
-		var obj_type := rng.randi() % 4
-		
-		match obj_type:
-			0:  # Wall/barrier
-				var box := BoxMesh.new()
-				var w := rng.randf_range(1.0, 4.0)
-				var h := rng.randf_range(1.0, 2.5)
-				box.size = Vector3(w, h, 0.4)
-				mesh_inst.mesh = box
-				mesh_inst.position.y = h / 2
-				
-				var shape := BoxShape3D.new()
-				shape.size = box.size
-				col.shape = shape
-				col.position.y = h / 2
-				
-				var mat := StandardMaterial3D.new()
-				match env_type:
-					"forest":
-						mat.albedo_color = Color(0.4, 0.35, 0.2)
-					"desert":
-						mat.albedo_color = Color(0.65, 0.5, 0.35)
-					"military_base":
-						mat.albedo_color = Color(0.4, 0.42, 0.38)
-					"village":
-						mat.albedo_color = Color(0.55, 0.45, 0.35)
-					"industrial":
-						mat.albedo_color = Color(0.45, 0.4, 0.35)
-				mesh_inst.material_override = mat
-			
-			1:  # Crate
-				var box := BoxMesh.new()
-				var s := rng.randf_range(0.6, 1.5)
-				box.size = Vector3(s, s, s)
-				mesh_inst.mesh = box
-				mesh_inst.position.y = s / 2
-				
-				var shape := BoxShape3D.new()
-				shape.size = box.size
-				col.shape = shape
-				col.position.y = s / 2
-				
-				var mat := StandardMaterial3D.new()
-				mat.albedo_color = Color(0.5, 0.4, 0.2)
-				mesh_inst.material_override = mat
-			
-			2:  # Cylinder (barrel/pillar)
-				var cyl := CylinderMesh.new()
-				cyl.top_radius = rng.randf_range(0.3, 0.6)
-				cyl.bottom_radius = cyl.top_radius
-				cyl.height = rng.randf_range(0.8, 1.5)
-				mesh_inst.mesh = cyl
-				mesh_inst.position.y = cyl.height / 2
-				
-				var shape := CylinderShape3D.new()
-				shape.radius = cyl.top_radius
-				shape.height = cyl.height
-				col.shape = shape
-				col.position.y = cyl.height / 2
-				
-				var mat := StandardMaterial3D.new()
-				mat.albedo_color = Color(0.35, 0.35, 0.3)
-				mat.metallic = 0.5
-				mesh_inst.material_override = mat
-			
-			3:  # Rock (sphere-ish)
-				var sphere := SphereMesh.new()
-				var r := rng.randf_range(0.5, 1.5)
-				sphere.radius = r
-				sphere.height = r * 1.5
-				mesh_inst.mesh = sphere
-				mesh_inst.position.y = r * 0.6
-				
-				var shape := SphereShape3D.new()
-				shape.radius = r
-				col.shape = shape
-				col.position.y = r * 0.6
-				
-				var mat := StandardMaterial3D.new()
-				match env_type:
-					"forest":
-						mat.albedo_color = Color(0.35, 0.35, 0.3)
-					"desert":
-						mat.albedo_color = Color(0.6, 0.5, 0.4)
-					_:
-						mat.albedo_color = Color(0.4, 0.38, 0.35)
-				mesh_inst.material_override = mat
-		
 		obj.rotation_degrees.y = rng.randf_range(0, 360)
 		
-		obj.add_child(mesh_inst)
+		var col := CollisionShape3D.new()
+		var obj_type := rng.randi() % 5
+		var model_node: Node3D = null
+		
+		match obj_type:
+			0:  # Military Sandbag Barricade
+				var path := "res://assets/models/props/Sandbags.glb"
+				if ResourceLoader.exists(path):
+					var scene: PackedScene = load(path)
+					if scene:
+						model_node = scene.instantiate()
+						model_node.scale = Vector3(3.2, 3.2, 3.2)
+						var shape := BoxShape3D.new()
+						shape.size = Vector3(0.9, 0.75, 0.4)
+						col.shape = shape
+						col.position.y = 0.38
+				
+				if model_node == null:
+					var box := BoxMesh.new()
+					box.size = Vector3(1.5, 0.8, 0.4)
+					var m := MeshInstance3D.new()
+					m.mesh = box
+					m.position.y = 0.4
+					model_node = m
+					var shape := BoxShape3D.new()
+					shape.size = box.size
+					col.shape = shape
+					col.position.y = 0.4
+			
+			1:  # Wooden Supply Crate
+				var path := "res://assets/models/props/Crate.glb"
+				if ResourceLoader.exists(path):
+					var scene: PackedScene = load(path)
+					if scene:
+						model_node = scene.instantiate()
+						var s := rng.randf_range(4.5, 6.0)
+						model_node.scale = Vector3(s, s, s)
+						var shape := BoxShape3D.new()
+						shape.size = Vector3(s * 0.16, s * 0.16, s * 0.16)
+						col.shape = shape
+						col.position.y = shape.size.y / 2.0
+				
+				if model_node == null:
+					var box := BoxMesh.new()
+					box.size = Vector3(1.0, 1.0, 1.0)
+					var m := MeshInstance3D.new()
+					m.mesh = box
+					m.position.y = 0.5
+					model_node = m
+					var shape := BoxShape3D.new()
+					shape.size = box.size
+					col.shape = shape
+					col.position.y = 0.5
+			
+			2:  # Steel Drum or Gas Cylinder
+				var use_barrel := rng.randf() <= 0.65
+				var path := "res://assets/models/props/Barrel.glb" if use_barrel else "res://assets/models/props/PropaneTank.glb"
+				
+				if ResourceLoader.exists(path):
+					var scene: PackedScene = load(path)
+					if scene:
+						model_node = scene.instantiate()
+						if use_barrel:
+							model_node.scale = Vector3(5.5, 5.5, 5.5)
+							var shape := CylinderShape3D.new()
+							shape.radius = 0.45
+							shape.height = 1.15
+							col.shape = shape
+							col.position.y = 0.57
+						else:
+							model_node.scale = Vector3(0.28, 0.28, 0.28)
+							var shape := CylinderShape3D.new()
+							shape.radius = 0.3
+							shape.height = 0.8
+							col.shape = shape
+							col.position.y = 0.4
+				
+				if model_node == null:
+					var cyl := CylinderMesh.new()
+					cyl.top_radius = 0.4
+					cyl.bottom_radius = 0.4
+					cyl.height = 1.1
+					var m := MeshInstance3D.new()
+					m.mesh = cyl
+					m.position.y = 0.55
+					model_node = m
+					var shape := CylinderShape3D.new()
+					shape.radius = 0.4
+					shape.height = 1.1
+					col.shape = shape
+					col.position.y = 0.55
+			
+			3:  # Natural Rock Cover
+				var rock_path := "res://assets/models/environment/Rock_1.glb" if rng.randf() > 0.5 else "res://assets/models/environment/Rock_2.glb"
+				if ResourceLoader.exists(rock_path):
+					var scene: PackedScene = load(rock_path)
+					if scene:
+						model_node = scene.instantiate()
+						var r_scale := rng.randf_range(1.1, 1.6)
+						model_node.scale = Vector3(r_scale, r_scale, r_scale)
+						var shape := SphereShape3D.new()
+						shape.radius = 0.55 * r_scale
+						col.shape = shape
+						col.position.y = shape.radius * 0.7
+				
+				if model_node == null:
+					var sphere := SphereMesh.new()
+					sphere.radius = 0.7
+					sphere.height = 1.0
+					var m := MeshInstance3D.new()
+					m.mesh = sphere
+					m.position.y = 0.5
+					model_node = m
+					var shape := SphereShape3D.new()
+					shape.radius = 0.7
+					col.shape = shape
+					col.position.y = 0.5
+			
+			4:  # Tactical Fuel Canister
+				var can_path := "res://assets/models/props/GasCan.glb"
+				if ResourceLoader.exists(can_path):
+					var scene: PackedScene = load(can_path)
+					if scene:
+						model_node = scene.instantiate()
+						model_node.scale = Vector3(0.22, 0.22, 0.22)
+						var shape := BoxShape3D.new()
+						shape.size = Vector3(0.4, 0.5, 0.25)
+						col.shape = shape
+						col.position.y = 0.25
+				
+				if model_node == null:
+					var box := BoxMesh.new()
+					box.size = Vector3(0.4, 0.5, 0.25)
+					var m := MeshInstance3D.new()
+					m.mesh = box
+					m.position.y = 0.25
+					model_node = m
+					var shape := BoxShape3D.new()
+					shape.size = box.size
+					col.shape = shape
+					col.position.y = 0.25
+		
+		if model_node:
+			obj.add_child(model_node)
 		obj.add_child(col)
 		nav_parent.add_child(obj)
 	
-	# Trees (for forest/village) - simple cone + cylinder
-	if env_type in ["forest", "village"]:
-		for i in range(20):
-			var tree := StaticBody3D.new()
-			tree.collision_layer = 1
-			tree.position = Vector3(
-				rng.randf_range(-45, 45),
-				0,
-				rng.randf_range(-45, 45)
-			)
-			if tree.position.length() < 8:
-				continue
-			
-			# Trunk
+	# Trees & Foliage
+	var num_trees := 22 if env_type in ["forest", "village"] else 8
+	for i in num_trees:
+		var tree_pos := Vector3(
+			rng.randf_range(-46, 46),
+			0,
+			rng.randf_range(-46, 46)
+		)
+		if tree_pos.length() < 9:
+			continue
+		
+		var tree := StaticBody3D.new()
+		tree.collision_layer = 1
+		tree.position = tree_pos
+		tree.rotation_degrees.y = rng.randf_range(0, 360)
+		
+		var tree_path := "res://assets/models/environment/Tree_1.glb" if rng.randf() > 0.5 else "res://assets/models/environment/Tree_2.glb"
+		var tree_inst: Node3D = null
+		if ResourceLoader.exists(tree_path):
+			var scene: PackedScene = load(tree_path)
+			if scene:
+				tree_inst = scene.instantiate()
+				var t_scale := rng.randf_range(0.9, 1.3)
+				tree_inst.scale = Vector3(t_scale, t_scale, t_scale)
+				tree.add_child(tree_inst)
+		
+		if tree_inst == null:
 			var trunk := MeshInstance3D.new()
 			var trunk_mesh := CylinderMesh.new()
 			trunk_mesh.top_radius = 0.15
@@ -264,7 +352,6 @@ func _spawn_cover_objects(nav_parent: Node3D) -> void:
 			trunk.material_override = trunk_mat
 			tree.add_child(trunk)
 			
-			# Foliage (cone)
 			var foliage := MeshInstance3D.new()
 			var cone := CylinderMesh.new()
 			cone.top_radius = 0.0
@@ -276,17 +363,34 @@ func _spawn_cover_objects(nav_parent: Node3D) -> void:
 			foliage_mat.albedo_color = Color(0.15, 0.4, 0.12)
 			foliage.material_override = foliage_mat
 			tree.add_child(foliage)
-			
-			# Collision (simple cylinder for trunk)
-			var col := CollisionShape3D.new()
-			var shape := CylinderShape3D.new()
-			shape.radius = 0.2
-			shape.height = 3.0
-			col.shape = shape
-			col.position.y = 1.5
-			tree.add_child(col)
-			
-			nav_parent.add_child(tree)
+		
+		# Trunk collision
+		var col := CollisionShape3D.new()
+		var shape := CylinderShape3D.new()
+		shape.radius = 0.25
+		shape.height = 3.5
+		col.shape = shape
+		col.position.y = 1.75
+		tree.add_child(col)
+		
+		nav_parent.add_child(tree)
+	
+	# Bushes (ground cover)
+	if env_type in ["forest", "village", "military_base"]:
+		var bush_path := "res://assets/models/environment/Bush_1.glb"
+		if ResourceLoader.exists(bush_path):
+			var bush_scene: PackedScene = load(bush_path)
+			if bush_scene:
+				for i in 15:
+					var b_pos := Vector3(rng.randf_range(-42, 42), 0, rng.randf_range(-42, 42))
+					if b_pos.length() < 7:
+						continue
+					var b_inst: Node3D = bush_scene.instantiate()
+					var b_scale := rng.randf_range(0.8, 1.4)
+					b_inst.scale = Vector3(b_scale, b_scale, b_scale)
+					b_inst.position = b_pos
+					b_inst.rotation_degrees.y = rng.randf_range(0, 360)
+					nav_parent.add_child(b_inst)
 
 
 func _spawn_player() -> void:

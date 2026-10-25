@@ -203,5 +203,33 @@ func _create_action_button(text: String, pos: Vector2, btn_size: Vector2, color:
 	btn.position = pos
 	btn.size = btn_size
 	btn.add_theme_font_size_override("font_size", 16)
-	btn.modulate = color + Color(0.3, 0.3, 0.3, 0)
+	
+	var style_normal := StyleBoxFlat.new()
+	style_normal.bg_color = Color(color.r * 0.35, color.g * 0.35, color.b * 0.35, color.a * 0.75)
+	style_normal.border_color = Color(color.r, color.g, color.b, color.a * 0.9)
+	style_normal.border_width_left = 2
+	style_normal.border_width_top = 2
+	style_normal.border_width_right = 2
+	style_normal.border_width_bottom = 2
+	style_normal.corner_radius_top_left = int(btn_size.x / 2.0)
+	style_normal.corner_radius_top_right = int(btn_size.x / 2.0)
+	style_normal.corner_radius_bottom_right = int(btn_size.x / 2.0)
+	style_normal.corner_radius_bottom_left = int(btn_size.x / 2.0)
+	
+	var style_pressed := StyleBoxFlat.new()
+	style_pressed.bg_color = Color(color.r, color.g, color.b, 0.85)
+	style_pressed.border_color = Color(1.0, 1.0, 1.0, 0.9)
+	style_pressed.border_width_left = 2
+	style_pressed.border_width_top = 2
+	style_pressed.border_width_right = 2
+	style_pressed.border_width_bottom = 2
+	style_pressed.corner_radius_top_left = int(btn_size.x / 2.0)
+	style_pressed.corner_radius_top_right = int(btn_size.x / 2.0)
+	style_pressed.corner_radius_bottom_right = int(btn_size.x / 2.0)
+	style_pressed.corner_radius_bottom_left = int(btn_size.x / 2.0)
+	
+	btn.add_theme_stylebox_override("normal", style_normal)
+	btn.add_theme_stylebox_override("pressed", style_pressed)
+	btn.add_theme_stylebox_override("hover", style_normal)
+	btn.add_theme_color_override("font_color", Color(1.0, 1.0, 1.0, 0.95))
 	return btn

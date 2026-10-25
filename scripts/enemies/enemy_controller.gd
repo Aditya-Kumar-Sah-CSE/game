@@ -45,6 +45,10 @@ var _max_ammo: int = 30
 # Visual
 var _mesh_root: Node3D
 var _health_bar: MeshInstance3D
+const CharacterAnimatorClass = preload("res://scripts/player/character_animator.gd")
+var _animator: Node = null
+var _skeleton: Skeleton3D = null
+var _is_using_skeletal_mesh: bool = false
 
 # Gravity
 var _gravity: float = ProjectSettings.get_setting("physics/3d/default_gravity", 9.8)
@@ -79,6 +83,113 @@ func _setup_enemy() -> void:
 
 
 func _create_enemy_mesh() -> void:
+	var is_dummy := enemy_type == "training_dummy"
+	
+	if is_dummy:
+		_create_training_dummy_mesh()
+		return
+	
+	# Real 3D Soldier Model
+	var model_path := "res://assets/models/characters/Swat.glb"
+	if ResourceLoader.exists(model_path):
+		var scene: PackedScene = load(model_path)
+		if scene:
+			var model: Node3D = scene.instantiate()
+			_mesh_root.add_child(model)
+			
+			_skeleton = _find_skeleton(model)
+			if _skeleton:
+				_animator = CharacterAnimatorClass.new()
+				_animator.setup(model, _skeleton)
+				_apply_enemy_tint(model)
+				
+				# Weapon attachment on right hand
+				var hand_idx := _skeleton.find_bone("Hand.R")
+				if hand_idx != -1:
+					var hand_attach := BoneAttachment3D.new()
+					hand_attach.bone_name = "Hand.R"
+					_skeleton.add_child(hand_attach)
+					
+					var wpn_path := "res://assets/models/weapons/AssaultRifle.glb"
+					if ResourceLoader.exists(wpn_path):
+						var wpn_scene: PackedScene = load(wpn_path)
+						if wpn_scene:
+							var wpn_inst = wpn_scene.instantiate()
+							wpn_inst.scale = Vector3(0.0085, 0.0085, 0.0085)
+							wpn_inst.rotation_degrees = Vector3(0, 90, 0)
+							wpn_inst.position = Vector3(0, -0.0004, -0.001)
+							hand_attach.add_child(wpn_inst)
+				
+				_is_using_skeletal_mesh = true
+				return
+	
+	# Procedural fallback
+	_create_procedural_enemy_mesh()
+
+
+func _create_training_dummy_mesh() -> void:
+	# Wooden Stand
+	var stand := MeshInstance3D.new()
+	var stand_mesh := BoxMesh.new()
+	stand_mesh.size = Vector3(0.8, 0.1, 0.8)
+	stand.mesh = stand_mesh
+	stand.position = Vector3(0, 0.05, 0)
+	var wood_mat := StandardMaterial3D.new()
+	wood_mat.albedo_color = Color(0.45, 0.32, 0.18)
+	wood_mat.roughness = 0.85
+	stand.material_override = wood_mat
+	_mesh_root.add_child(stand)
+	
+	# Upright post
+	var post := MeshInstance3D.new()
+	var post_mesh := CylinderMesh.new()
+	post_mesh.top_radius = 0.08
+	post_mesh.bottom_radius = 0.08
+	post_mesh.height = 1.6
+	post.mesh = post_mesh
+	post.position = Vector3(0, 0.8, 0)
+	post.material_override = wood_mat
+	_mesh_root.add_child(post)
+	
+	# Target Torso silhouette
+	var torso := MeshInstance3D.new()
+	var torso_mesh := BoxMesh.new()
+	torso_mesh.size = Vector3(0.55, 0.85, 0.08)
+	torso.mesh = torso_mesh
+	torso.position = Vector3(0, 1.25, 0)
+	var target_mat := StandardMaterial3D.new()
+	target_mat.albedo_color = Color(0.85, 0.78, 0.65)
+	target_mat.roughness = 0.9
+	torso.material_override = target_mat
+	_mesh_root.add_child(torso)
+	
+	# Target Head
+	var head := MeshInstance3D.new()
+	var head_mesh := CylinderMesh.new()
+	head_mesh.top_radius = 0.14
+	head_mesh.bottom_radius = 0.14
+	head_mesh.height = 0.28
+	head.mesh = head_mesh
+	head.position = Vector3(0, 1.78, 0)
+	head.material_override = target_mat
+	_mesh_root.add_child(head)
+	
+	# Bullseye Ring Decal
+	var bullseye := MeshInstance3D.new()
+	var bullseye_mesh := CylinderMesh.new()
+	bullseye_mesh.top_radius = 0.18
+	bullseye_mesh.bottom_radius = 0.18
+	bullseye_mesh.height = 0.02
+	bullseye.mesh = bullseye_mesh
+	bullseye.rotation_degrees.x = 90
+	bullseye.position = Vector3(0, 1.25, 0.05)
+	var bullseye_mat := StandardMaterial3D.new()
+	bullseye_mat.albedo_color = Color(0.85, 0.15, 0.15)
+	bullseye.material_override = bullseye_mat
+	_mesh_root.add_child(bullseye)
+
+
+func _create_procedural_enemy_mesh() -> void:
 	# Body
 	var body := MeshInstance3D.new()
 	var body_mesh := CapsuleMesh.new()
@@ -86,9 +197,8 @@ func _create_enemy_mesh() -> void:
 	body_mesh.height = 1.2
 	body.mesh = body_mesh
 	body.position = Vector3(0, 1.0, 0)
-	var is_dummy := enemy_type == "training_dummy"
 	var body_mat := StandardMaterial3D.new()
-	body_mat.albedo_color = Color(0.85, 0.45, 0.1) if is_dummy else Color(0.5, 0.2, 0.15)
+	body_mat.albedo_color = Color(0.5, 0.2, 0.15)
 	body.material_override = body_mat
 	_mesh_root.add_child(body)
 	
@@ -100,34 +210,33 @@ func _create_enemy_mesh() -> void:
 	head.mesh = head_mesh
 	head.position = Vector3(0, 1.75, 0)
 	var head_mat := StandardMaterial3D.new()
-	head_mat.albedo_color = Color(0.9, 0.75, 0.4) if is_dummy else Color(0.65, 0.5, 0.4)
+	head_mat.albedo_color = Color(0.65, 0.5, 0.4)
 	head.material_override = head_mat
 	_mesh_root.add_child(head)
 	
-	if not is_dummy:
-		# Helmet (enemy)
-		var helmet := MeshInstance3D.new()
-		var helmet_mesh := SphereMesh.new()
-		helmet_mesh.radius = 0.2
-		helmet_mesh.height = 0.28
-		helmet.mesh = helmet_mesh
-		helmet.position = Vector3(0, 1.82, 0)
-		var hmat := StandardMaterial3D.new()
-		hmat.albedo_color = Color(0.3, 0.15, 0.1)
-		helmet.material_override = hmat
-		_mesh_root.add_child(helmet)
-		
-		# Weapon
-		var wpn := MeshInstance3D.new()
-		var wpn_mesh := BoxMesh.new()
-		wpn_mesh.size = Vector3(0.05, 0.07, 0.5)
-		wpn.mesh = wpn_mesh
-		wpn.position = Vector3(0.35, 1.1, -0.3)
-		var wpn_mat := StandardMaterial3D.new()
-		wpn_mat.albedo_color = Color(0.12, 0.12, 0.12)
-		wpn_mat.metallic = 0.7
-		wpn.material_override = wpn_mat
-		_mesh_root.add_child(wpn)
+	# Helmet
+	var helmet := MeshInstance3D.new()
+	var helmet_mesh := SphereMesh.new()
+	helmet_mesh.radius = 0.2
+	helmet_mesh.height = 0.28
+	helmet.mesh = helmet_mesh
+	helmet.position = Vector3(0, 1.82, 0)
+	var hmat := StandardMaterial3D.new()
+	hmat.albedo_color = Color(0.3, 0.15, 0.1)
+	helmet.material_override = hmat
+	_mesh_root.add_child(helmet)
+	
+	# Weapon
+	var wpn := MeshInstance3D.new()
+	var wpn_mesh := BoxMesh.new()
+	wpn_mesh.size = Vector3(0.05, 0.07, 0.5)
+	wpn.mesh = wpn_mesh
+	wpn.position = Vector3(0.35, 1.1, -0.3)
+	var wpn_mat := StandardMaterial3D.new()
+	wpn_mat.albedo_color = Color(0.12, 0.12, 0.12)
+	wpn_mat.metallic = 0.7
+	wpn.material_override = wpn_mat
+	_mesh_root.add_child(wpn)
 	
 	# Legs
 	for side in [-1, 1]:
@@ -142,6 +251,26 @@ func _create_enemy_mesh() -> void:
 		leg_mat.albedo_color = Color(0.35, 0.18, 0.12)
 		leg.material_override = leg_mat
 		_mesh_root.add_child(leg)
+
+
+func _find_skeleton(node: Node) -> Skeleton3D:
+	if node is Skeleton3D:
+		return node
+	for child in node.get_children():
+		var found := _find_skeleton(child)
+		if found:
+			return found
+	return null
+
+
+func _apply_enemy_tint(node: Node) -> void:
+	if node is MeshInstance3D:
+		var mat := StandardMaterial3D.new()
+		mat.albedo_color = Color(0.42, 0.22, 0.2)
+		mat.roughness = 0.6
+		node.material_override = mat
+	for child in node.get_children():
+		_apply_enemy_tint(child)
 
 
 func _setup_navigation() -> void:
@@ -293,6 +422,19 @@ func _update_state(delta: float) -> void:
 					current_state = AIState.ATTACK
 				else:
 					current_state = AIState.ALERT
+	
+	if _animator and _is_using_skeletal_mesh:
+		match current_state:
+			AIState.DEAD:
+				_animator.play_anim("death", 0.15)
+			AIState.ATTACK:
+				_animator.play_anim("aim", 0.15)
+			AIState.CHASE:
+				_animator.play_anim("run", 0.2)
+			AIState.PATROL, AIState.INVESTIGATE:
+				_animator.play_anim("walk", 0.2)
+			AIState.IDLE, AIState.ALERT:
+				_animator.play_anim("idle", 0.2)
 
 
 func _update_movement(delta: float) -> void:
@@ -334,6 +476,9 @@ func _perform_attack() -> void:
 	if _target == null or current_state == AIState.DEAD:
 		return
 	
+	if _animator and _is_using_skeletal_mesh:
+		_animator.play_one_shot("fire")
+	
 	# Raycast attack
 	var origin := global_position + Vector3.UP * 1.2
 	var target_pos := _target.global_position + Vector3.UP * 1.0
@@ -374,6 +519,8 @@ func take_damage(amount: float, from_position: Vector3 = Vector3.ZERO) -> void:
 		# Brief hurt state
 		current_state = AIState.HURT
 		_attack_cooldown = 0.3  # Stagger duration
+		if _animator and _is_using_skeletal_mesh:
+			_animator.play_one_shot("hit")
 		
 		# Find the player as target
 		if _target == null:
@@ -390,8 +537,10 @@ func _die() -> void:
 	collision_layer = 0
 	collision_mask = 0
 	
-	# Death animation (fall over)
-	if is_inside_tree() and _mesh_root:
+	# Death animation
+	if _animator and _is_using_skeletal_mesh:
+		_animator.play_anim("death", 0.15)
+	elif is_inside_tree() and _mesh_root:
 		var tween := create_tween()
 		if tween:
 			tween.tween_property(_mesh_root, "rotation_degrees:x", -90, 0.4)

@@ -18,7 +18,7 @@ var _is_reloading: bool = false
 var _current_spread: float = 0.0
 
 # Weapon visual
-var _weapon_mesh: MeshInstance3D
+var _weapon_mesh: Node3D
 
 
 func setup(player: PlayerController) -> void:
@@ -234,56 +234,111 @@ func _do_hitscan(data: WeaponData, spread_degrees: float) -> void:
 			GameManager.record_shot_hit(is_headshot)
 
 
+const WEAPON_MODELS: Dictionary = {
+	"assault_rifle": "res://assets/models/weapons/AssaultRifle.glb",
+	"pistol": "res://assets/models/weapons/Pistol.glb",
+	"shotgun": "res://assets/models/weapons/Shotgun.glb",
+	"sniper": "res://assets/models/weapons/Sniper.glb"
+}
+
+
 func _spawn_muzzle_flash() -> void:
-	if not _player.weapon_holder:
+	if not _player or not _player.weapon_holder:
 		return
 	
-	var flash := MeshInstance3D.new()
-	var flash_mesh := SphereMesh.new()
-	flash_mesh.radius = 0.08
-	flash_mesh.height = 0.16
-	flash.mesh = flash_mesh
+	var flash := Node3D.new()
+	flash.name = "MuzzleFlash"
 	
-	var mat := StandardMaterial3D.new()
-	mat.albedo_color = Color(1.0, 0.8, 0.3)
-	mat.emission_enabled = true
-	mat.emission = Color(1.0, 0.7, 0.2)
-	mat.emission_energy_multiplier = 5.0
-	mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
-	flash.material_override = mat
+	# Cross-quad flash geometry
+	for rot in [0.0, 90.0]:
+		var quad := MeshInstance3D.new()
+		var qm := QuadMesh.new()
+		qm.size = Vector2(0.22, 0.22)
+		quad.mesh = qm
+		quad.rotation_degrees.z = rot
+		
+		var mat := StandardMaterial3D.new()
+		mat.albedo_color = Color(1.0, 0.9, 0.5, 0.9)
+		mat.emission_enabled = true
+		mat.emission = Color(1.0, 0.8, 0.3)
+		mat.emission_energy_multiplier = 6.0
+		mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+		mat.cull_mode = BaseMaterial3D.CULL_DISABLED
+		mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+		quad.material_override = mat
+		flash.add_child(quad)
 	
-	flash.position = Vector3(0, 0, -0.8)
+	# Dynamic OmniLight pulse
+	var light := OmniLight3D.new()
+	light.light_color = Color(1.0, 0.85, 0.4)
+	light.light_energy = 3.5
+	light.omni_range = 8.0
+	light.shadow_enabled = false
+	flash.add_child(light)
+	
+	flash.position = Vector3(0, 0, -0.65)
 	_player.weapon_holder.add_child(flash)
 	
-	# Remove after brief flash
-	var tween := _player.create_tween()
-	tween.tween_property(mat, "albedo_color:a", 0.0, 0.08)
-	tween.tween_callback(flash.queue_free)
+	# Fade and remove
+	if _player.is_inside_tree():
+		var tween := _player.create_tween()
+		tween.set_parallel(true)
+		tween.tween_property(light, "light_energy", 0.0, 0.06)
+		tween.tween_property(flash, "scale", Vector3.ZERO, 0.06)
+		tween.chain().tween_callback(flash.queue_free)
+	else:
+		flash.queue_free()
 
 
 func _spawn_impact(pos: Vector3, normal: Vector3) -> void:
-	# Simple impact particle/mesh
-	var impact := MeshInstance3D.new()
-	var impact_mesh := SphereMesh.new()
-	impact_mesh.radius = 0.03
-	impact_mesh.height = 0.06
-	impact.mesh = impact_mesh
+	if not _player or not _player.is_inside_tree():
+		return
+	
+	var impact_root := Node3D.new()
+	impact_root.global_position = pos
+	_player.get_tree().current_scene.add_child(impact_root)
+	
+	# Spark burst along normal
+	var spark := MeshInstance3D.new()
+	var sm := SphereMesh.new()
+	sm.radius = 0.05
+	sm.height = 0.1
+	spark.mesh = sm
 	
 	var mat := StandardMaterial3D.new()
-	mat.albedo_color = Color(0.8, 0.6, 0.2, 0.8)
+	mat.albedo_color = Color(1.0, 0.7, 0.2, 0.9)
 	mat.emission_enabled = true
-	mat.emission = Color(1.0, 0.6, 0.1)
-	mat.emission_energy_multiplier = 3.0
+	mat.emission = Color(1.0, 0.65, 0.15)
+	mat.emission_energy_multiplier = 4.0
 	mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
-	impact.material_override = mat
+	spark.material_override = mat
+	impact_root.add_child(spark)
 	
-	impact.global_position = pos
-	_player.get_tree().current_scene.add_child(impact)
+	# Scorch ring decal
+	var decal := MeshInstance3D.new()
+	var dm := QuadMesh.new()
+	dm.size = Vector2(0.2, 0.2)
+	decal.mesh = dm
 	
-	# Fade and remove
-	var tween := impact.create_tween()
-	tween.tween_property(mat, "albedo_color:a", 0.0, 0.3)
-	tween.tween_callback(impact.queue_free)
+	var dmat := StandardMaterial3D.new()
+	dmat.albedo_color = Color(0.1, 0.1, 0.1, 0.6)
+	dmat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+	dmat.cull_mode = BaseMaterial3D.CULL_DISABLED
+	decal.material_override = dmat
+	
+	if normal.length_squared() > 0.01:
+		if absf(normal.dot(Vector3.UP)) < 0.99:
+			decal.look_at(pos + normal, Vector3.UP)
+		else:
+			decal.look_at(pos + normal, Vector3.RIGHT)
+	decal.position += normal * 0.01
+	impact_root.add_child(decal)
+	
+	var tween := impact_root.create_tween()
+	tween.set_parallel(true)
+	tween.tween_property(mat, "albedo_color:a", 0.0, 0.2)
+	tween.tween_property(dmat, "albedo_color:a", 0.0, 0.8)
+	tween.chain().tween_callback(impact_root.queue_free)
 
 
 func _create_default_weapons() -> void:
@@ -338,35 +393,61 @@ func _equip_current() -> void:
 	# Clear old weapon visual
 	if _weapon_mesh and is_instance_valid(_weapon_mesh):
 		_weapon_mesh.queue_free()
+		_weapon_mesh = null
 	
 	var data := get_current_data()
 	if data == null:
 		return
 	
-	# Create weapon mesh
-	_weapon_mesh = MeshInstance3D.new()
-	var wpn_mesh := BoxMesh.new()
+	var model_path: String = WEAPON_MODELS.get(data.weapon_id, "")
+	if not model_path.is_empty() and ResourceLoader.exists(model_path):
+		var scene: PackedScene = load(model_path)
+		if scene:
+			var inst: Node3D = scene.instantiate()
+			_weapon_mesh = inst
+			match data.weapon_id:
+				"assault_rifle":
+					inst.scale = Vector3(0.45, 0.45, 0.45)
+					inst.rotation_degrees = Vector3(0, 90, 0)
+					inst.position = Vector3(0, -0.04, -0.12)
+				"pistol":
+					inst.scale = Vector3(0.25, 0.25, 0.25)
+					inst.rotation_degrees = Vector3(0, 90, 0)
+					inst.position = Vector3(0, -0.02, -0.05)
+				"shotgun":
+					inst.scale = Vector3(0.18, 0.18, 0.18)
+					inst.rotation_degrees = Vector3(0, 90, 0)
+					inst.position = Vector3(0, -0.04, -0.12)
+				"sniper":
+					inst.scale = Vector3(0.5, 0.5, 0.5)
+					inst.rotation_degrees = Vector3(0, 90, 0)
+					inst.position = Vector3(0, -0.04, -0.18)
+				_:
+					inst.scale = Vector3(0.4, 0.4, 0.4)
+					inst.rotation_degrees = Vector3(0, 90, 0)
 	
-	match data.weapon_id:
-		"assault_rifle":
-			wpn_mesh.size = Vector3(0.06, 0.08, 0.7)
-		"pistol":
-			wpn_mesh.size = Vector3(0.04, 0.1, 0.25)
-		"smg":
-			wpn_mesh.size = Vector3(0.05, 0.07, 0.5)
-		"shotgun":
-			wpn_mesh.size = Vector3(0.06, 0.08, 0.8)
-		"sniper":
-			wpn_mesh.size = Vector3(0.05, 0.07, 1.0)
-		_:
-			wpn_mesh.size = Vector3(0.06, 0.08, 0.5)
-	
-	_weapon_mesh.mesh = wpn_mesh
-	var mat := StandardMaterial3D.new()
-	mat.albedo_color = Color(0.15, 0.15, 0.15)
-	mat.metallic = 0.8
-	mat.roughness = 0.3
-	_weapon_mesh.material_override = mat
+	# Procedural fallback
+	if _weapon_mesh == null:
+		var mesh_inst := MeshInstance3D.new()
+		var wpn_mesh := BoxMesh.new()
+		match data.weapon_id:
+			"assault_rifle":
+				wpn_mesh.size = Vector3(0.06, 0.08, 0.7)
+			"pistol":
+				wpn_mesh.size = Vector3(0.04, 0.1, 0.25)
+			"shotgun":
+				wpn_mesh.size = Vector3(0.06, 0.08, 0.8)
+			"sniper":
+				wpn_mesh.size = Vector3(0.05, 0.07, 1.0)
+			_:
+				wpn_mesh.size = Vector3(0.06, 0.08, 0.5)
+		mesh_inst.mesh = wpn_mesh
+		var mat := StandardMaterial3D.new()
+		mat.albedo_color = Color(0.15, 0.15, 0.15)
+		mat.metallic = 0.8
+		mat.roughness = 0.3
+		mesh_inst.material_override = mat
+		_weapon_mesh = mesh_inst
 	
 	if _player and _player.weapon_holder:
 		_player.weapon_holder.add_child(_weapon_mesh)

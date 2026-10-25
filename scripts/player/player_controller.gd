@@ -45,7 +45,16 @@ var weapon_holder: Node3D
 var mesh_root: Node3D
 var anim_player: AnimationPlayer
 
-# Limb pivots for procedural animation
+# 3D Skeletal character & animation
+const CharacterAnimatorClass = preload("res://scripts/player/character_animator.gd")
+var character_animator: Node = null
+var skeleton: Skeleton3D = null
+var is_using_skeletal_mesh: bool = false
+var _right_hand_attach: BoneAttachment3D = null
+var _backpack_attach: BoneAttachment3D = null
+var _model_instance: Node3D = null
+
+# Limb pivots for procedural animation (fallback)
 var _left_leg: Node3D
 var _right_leg: Node3D
 var _left_arm: Node3D
@@ -95,7 +104,7 @@ func _ready() -> void:
 
 
 func _setup_character() -> void:
-	# Collision shape
+	# Collision shape (preserves exact physics capsule)
 	collision_shape = CollisionShape3D.new()
 	var capsule := CapsuleShape3D.new()
 	capsule.radius = 0.35
@@ -104,19 +113,19 @@ func _setup_character() -> void:
 	collision_shape.position = Vector3(0, _stand_height / 2.0, 0)
 	add_child(collision_shape)
 	
-	# Visual mesh (procedural soldier)
+	# Visual mesh root
 	mesh_root = Node3D.new()
 	mesh_root.name = "MeshRoot"
 	add_child(mesh_root)
-	_create_procedural_character()
+	_setup_character_model()
 	
-	# Camera pivot
+	# Camera pivot (tactical over-the-shoulder positioning)
 	camera_pivot = Node3D.new()
 	camera_pivot.name = "CameraPivot"
-	camera_pivot.position = Vector3(0, 1.5, 0)
+	camera_pivot.position = Vector3(0, 1.45, 0)
 	add_child(camera_pivot)
 	
-	# Spring arm for camera collision
+	# Spring arm for camera collision avoidance
 	spring_arm = SpringArm3D.new()
 	spring_arm.name = "SpringArm"
 	spring_arm.spring_length = camera_distance
@@ -131,11 +140,17 @@ func _setup_character() -> void:
 	camera.fov = 70.0
 	spring_arm.add_child(camera)
 	
-	# Weapon holder (attached to character)
+	# Weapon holder (attached to right hand bone if available, else character root)
 	weapon_holder = Node3D.new()
 	weapon_holder.name = "WeaponHolder"
-	weapon_holder.position = Vector3(0.3, 1.2, -0.5)
-	add_child(weapon_holder)
+	if _right_hand_attach:
+		_right_hand_attach.add_child(weapon_holder)
+		weapon_holder.position = Vector3(0.0, 0.0, 0.0)
+		weapon_holder.scale = Vector3(0.01, 0.01, 0.01)
+		weapon_holder.rotation_degrees = Vector3(0, 90, 0)
+	else:
+		weapon_holder.position = Vector3(0.3, 1.2, -0.5)
+		add_child(weapon_holder)
 	
 	# Setup collision layers
 	collision_layer = 2  # Player layer
@@ -146,6 +161,62 @@ func _setup_character() -> void:
 	_weapon_manager.name = "WeaponManager"
 	add_child(_weapon_manager)
 	_weapon_manager.setup(self)
+
+
+func _setup_character_model() -> void:
+	var char_path := "res://assets/models/characters/Swat.glb"
+	if GameManager.selected_character == "female_infiltrator":
+		char_path = "res://assets/models/characters/Soldier_Female.glb"
+	
+	if ResourceLoader.exists(char_path):
+		var scene: PackedScene = load(char_path)
+		if scene:
+			_model_instance = scene.instantiate()
+			mesh_root.add_child(_model_instance)
+			
+			skeleton = _find_skeleton(_model_instance)
+			if skeleton:
+				var AnimatorClass = preload("res://scripts/player/character_animator.gd")
+				character_animator = AnimatorClass.new()
+				anim_player = character_animator.setup(_model_instance, skeleton)
+				
+				# Setup backpack on Chest bone (scale calibrated for 100x armature)
+				var chest_idx := skeleton.find_bone("Chest")
+				if chest_idx != -1:
+					_backpack_attach = BoneAttachment3D.new()
+					_backpack_attach.bone_name = "Chest"
+					skeleton.add_child(_backpack_attach)
+					if ResourceLoader.exists("res://assets/models/props/Backpack.glb"):
+						var bp_scene: PackedScene = load("res://assets/models/props/Backpack.glb")
+						if bp_scene:
+							var bp = bp_scene.instantiate()
+							bp.scale = Vector3(0.0016, 0.0016, 0.0016)
+							bp.position = Vector3(0, -0.0004, -0.0012)
+							bp.rotation_degrees = Vector3(0, 180, 0)
+							_backpack_attach.add_child(bp)
+				
+				# Setup right hand bone attachment for weapon
+				var hand_idx := skeleton.find_bone("Hand.R")
+				if hand_idx != -1:
+					_right_hand_attach = BoneAttachment3D.new()
+					_right_hand_attach.bone_name = "Hand.R"
+					skeleton.add_child(_right_hand_attach)
+				
+				is_using_skeletal_mesh = true
+				return
+	
+	# Fallback if model not available
+	_create_procedural_character()
+
+
+func _find_skeleton(node: Node) -> Skeleton3D:
+	if node is Skeleton3D:
+		return node
+	for child in node.get_children():
+		var found := _find_skeleton(child)
+		if found:
+			return found
+	return null
 
 
 func _create_procedural_character() -> void:
@@ -249,7 +320,10 @@ func _physics_process(delta: float) -> void:
 	_handle_gravity(delta)
 	_handle_movement(delta)
 	_handle_actions()
-	_update_procedural_animation(delta)
+	if is_using_skeletal_mesh and character_animator:
+		_update_skeletal_animation(delta)
+	else:
+		_update_procedural_animation(delta)
 	
 	move_and_slide()
 
@@ -354,11 +428,15 @@ func _handle_actions() -> void:
 		if _weapon_manager:
 			_weapon_manager.try_fire()
 			_recoil_offset = 0.08
+			if character_animator and is_using_skeletal_mesh:
+				character_animator.play_one_shot("fire")
 	
 	# Reload
 	if Input.is_action_just_pressed("reload"):
 		if _weapon_manager:
 			_weapon_manager.try_reload()
+			if character_animator and is_using_skeletal_mesh:
+				character_animator.play_one_shot("reload")
 
 
 func _toggle_crouch() -> void:
@@ -371,14 +449,43 @@ func _toggle_crouch() -> void:
 	else:
 		capsule.height = _stand_height
 		collision_shape.position.y = _stand_height / 2.0
-		camera_pivot.position.y = 1.5
+		camera_pivot.position.y = 1.45
 
 
 func _update_aim_state() -> void:
 	if spring_arm:
 		var target_dist := camera_aim_distance if is_aiming else camera_distance
+		var target_offset := Vector3(0.65, 0.28, 0.0) if is_aiming else camera_offset
+		var target_fov := 52.0 if is_aiming else 70.0
 		var tween := create_tween()
-		tween.tween_property(spring_arm, "spring_length", target_dist, 0.2)
+		tween.set_parallel(true)
+		tween.tween_property(spring_arm, "spring_length", target_dist, 0.18).set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_OUT)
+		tween.tween_property(spring_arm, "position", target_offset, 0.18).set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_OUT)
+		if camera:
+			tween.tween_property(camera, "fov", target_fov, 0.18).set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_OUT)
+
+
+func _update_skeletal_animation(_delta: float) -> void:
+	if not character_animator:
+		return
+	
+	var target_anim := "idle"
+	if not is_on_floor():
+		target_anim = "jump"
+	elif is_crouching:
+		target_anim = "crouch"
+	elif is_aiming and current_speed < 0.2:
+		target_anim = "aim"
+	elif current_speed > 7.5:
+		target_anim = "sprint"
+	elif current_speed > 4.5:
+		target_anim = "run"
+	elif current_speed > 0.2:
+		target_anim = "walk"
+	else:
+		target_anim = "idle"
+	
+	character_animator.play_anim(target_anim)
 
 
 func _update_procedural_animation(delta: float) -> void:
@@ -440,6 +547,8 @@ func take_damage(amount: float, from_position: Vector3 = Vector3.ZERO) -> void:
 	
 	if current_health <= 0:
 		_die()
+	elif character_animator and is_using_skeletal_mesh:
+		character_animator.play_one_shot("hit")
 
 
 func heal(amount: float) -> void:
@@ -457,8 +566,10 @@ func _die() -> void:
 	current_health = 0
 	health_changed.emit(0, max_health)
 	
-	# Simple death visual
-	if is_inside_tree() and mesh_root:
+	# Death visual
+	if character_animator and is_using_skeletal_mesh:
+		character_animator.play_anim("death", 0.15)
+	elif is_inside_tree() and mesh_root:
 		var tween := create_tween()
 		if tween:
 			tween.tween_property(mesh_root, "rotation_degrees:x", -90, 0.5)
