@@ -12,3 +12,9 @@ mono_crash.*.json
 # Local OS files
 .DS_Store
 Thumbs.db
+
+# Build exports
+export/
+*.apk
+*.pck
+
